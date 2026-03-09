@@ -44,7 +44,7 @@ class HZCubingPlugin(Star):
 
     @filter.command("cube帮助")
     async def help_command(self, event: AstrMessageEvent):
-        async for result in handle_cube_help(event):
+        async for result in handle_cube_help(event, self.context):
             yield result
 
     @filter.command("pr")
