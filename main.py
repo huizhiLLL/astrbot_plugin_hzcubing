@@ -18,6 +18,7 @@ from .cmd_submit_record import handle as handle_submit_record
 from .cmd_user_bests import handle as handle_user_bests
 from .cmd_user_bests_pic import handle as handle_user_bests_pic
 from .cmd_cto import handle as handle_cto
+from .wenjun_cube import handle as handle_wenjun_cube
 
 
 @register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.1")
@@ -89,4 +90,9 @@ class HZCubingPlugin(Star):
     @filter.command("cto", alias={"CTO"})
     async def cto_scramble_command(self, event: AstrMessageEvent):
         async for result in handle_cto(event):
+            yield result
+
+    @filter.command("俊改")
+    async def wenjun_cube_command(self, event: AstrMessageEvent):
+        async for result in handle_wenjun_cube(event):
             yield result
