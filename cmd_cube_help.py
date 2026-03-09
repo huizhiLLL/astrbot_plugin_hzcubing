@@ -79,7 +79,7 @@ def _prepare_commands_data() -> dict:
             },
             {
                 "name": "/wcapk",
-                "desc": "WCA 成绩 PK 对比",
+                "desc": "WCA 成绩PK",
                 "example": "/wcapk 李华 张伟"
             },
             {
@@ -90,12 +90,12 @@ def _prepare_commands_data() -> dict:
             {
                 "name": "/pr",
                 "desc": "双平台 PR 查询",
-                "example": "/pr 李华 或 /pr [WCAID] [oneID]"
+                "example": "/pr 李华 或 /pr 2026LIHU01 1234"
             },
             {
                 "name": "/prpk",
                 "desc": "双平台 PR PK 对比",
-                "example": "/prpk 李华1 李华2"
+                "example": "/prpk 李华 张伟 或/prpk 2026LIHU01 1234 2026ZHAN01 4567"
             },
             {
                 "name": "/近期比赛",
