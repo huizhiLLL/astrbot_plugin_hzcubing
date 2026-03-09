@@ -8,8 +8,6 @@ from astrbot.core.utils.t2i.renderer import HtmlRenderer
 
 async def handle(event: AstrMessageEvent, context: Context):
     """生成精美的 cube 命令帮助图片"""
-    yield event.plain_result("正在为您生成命令帮助图，请稍候哦...（查看原图更加清晰~）").use_t2i(False)
-
     # 准备命令数据
     commands_data = _prepare_commands_data()
 
@@ -132,10 +130,10 @@ def _help_card_template() -> str:
       }
 
       .wrap {
-        width: 100%;
-        max-width: 800px;
+        width: 1400px;
+        max-width: 1400px;
         margin: 0 auto;
-        padding: 32px 24px;
+        padding: 48px 36px;
         background: linear-gradient(180deg, #f8faff 0%, #fffcf8 100%);
         min-height: 100vh;
       }
@@ -143,18 +141,18 @@ def _help_card_template() -> str:
       /* 标题区域 */
       .header {
         text-align: center;
-        margin-bottom: 32px;
+        margin-bottom: 40px;
       }
 
       .title {
-        font-size: 28px;
+        font-size: 36px;
         font-weight: 700;
         color: #002864;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
       }
 
       .subtitle {
-        font-size: 14px;
+        font-size: 18px;
         color: #505050;
       }
 
@@ -169,8 +167,8 @@ def _help_card_template() -> str:
       .card {
         background: #ffffff;
         border: 1px solid #dce1eb;
-        border-radius: 10px;
-        padding: 16px;
+        border-radius: 12px;
+        padding: 20px;
         transition: box-shadow 0.2s ease;
       }
 
@@ -179,25 +177,25 @@ def _help_card_template() -> str:
       }
 
       .card-command {
-        font-size: 18px;
+        font-size: 22px;
         font-weight: 700;
         color: #0a468c;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
       }
 
       .card-desc {
-        font-size: 13px;
+        font-size: 16px;
         color: #464646;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         line-height: 1.4;
       }
 
       .card-example {
-        font-size: 11px;
+        font-size: 14px;
         color: #646464;
         font-family: monospace;
         background: #f0f2f8;
-        padding: 4px 8px;
+        padding: 6px 10px;
         border-radius: 4px;
         display: inline-block;
       }
@@ -205,13 +203,13 @@ def _help_card_template() -> str:
       /* 底部提示 */
       .footer {
         text-align: center;
-        margin-top: 24px;
-        padding-top: 16px;
+        margin-top: 32px;
+        padding-top: 20px;
         border-top: 1px solid #e8eaef;
       }
 
       .footer-text {
-        font-size: 12px;
+        font-size: 16px;
         color: #646464;
       }
     </style>
