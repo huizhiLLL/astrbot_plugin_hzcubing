@@ -70,7 +70,7 @@ def _prepare_commands_data() -> dict:
             {
                 "name": "/wca绑定",
                 "desc": "绑定你的 WCAID 到 QQ，之后 /wca 可以直接查询，也支持 @ 某人查绑定结果",
-                "example": "/wca绑定 2025HUZE01 或 /wca绑定 胡泽恩"
+                "example": "/wca绑定 2026LIHU01 或 /wca绑定 李华"
             },
             {
                 "name": "/wca",
@@ -237,7 +237,7 @@ def _help_card_template() -> str:
       </div>
 
       <div class="footer">
-        <div class="footer-text">发送命令即可使用，如 /one 李华 或 /wca绑定 2025HUZE01</div>
+        <div class="footer-text">发送命令即可使用，如 /one 李华 或 /wca绑定 2026LIHU01</div>
       </div>
     </div>
   </body>
