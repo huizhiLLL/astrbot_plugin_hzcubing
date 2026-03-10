@@ -3,7 +3,7 @@ from astrbot.api.event import AstrMessageEvent
 
 from .group_policy import is_group_allowed
 from .hzcubing import EVENT_NAME_MAP, OFFICIAL_EVENT_CODES, OFFICIAL_EVENT_ORDER, format_time_seconds
-from .cmd_target_qq import resolve_target_qq
+from .cmd_target_qq import resolve_event_input, resolve_target_qq
 
 
 async def handle(plugin, event: AstrMessageEvent):
@@ -22,18 +22,7 @@ async def handle(plugin, event: AstrMessageEvent):
     if not allowed:
         return
 
-    cmd_tokens = plugin.parse_commands(event.message_str)
-
-    event_input = None
-    for i in range(1, 5):
-        token = cmd_tokens.get(i)
-        if not token:
-            continue
-        stripped = token.strip()
-        if stripped.startswith('@') or stripped.startswith('[CQ:at,'):
-            continue
-        event_input = stripped
-        break
+    event_input = resolve_event_input(event, "个人记录")
 
     event_code = None
 

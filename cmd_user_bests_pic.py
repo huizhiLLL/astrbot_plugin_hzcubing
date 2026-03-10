@@ -7,7 +7,7 @@ from astrbot.core.utils.t2i.renderer import HtmlRenderer
 
 from .group_policy import is_group_allowed
 from .hzcubing import EVENT_NAME_MAP, OFFICIAL_EVENT_CODES, OFFICIAL_EVENT_ORDER, format_time_seconds
-from .cmd_target_qq import resolve_target_qq
+from .cmd_target_qq import resolve_event_input, resolve_target_qq
 
 
 def _sort_best_records(best_records: list[dict]) -> list[dict]:
@@ -324,18 +324,8 @@ async def handle(plugin, event: AstrMessageEvent):
     if not allowed:
         return
 
-    cmd_tokens = plugin.parse_commands(event.message_str)
-    # 支持 /个人记录图 [@某人] [项目]，如果有@则优先查询被@的人
-    event_input = None
-    for i in range(1, 5):
-        token = cmd_tokens.get(i)
-        if not token:
-            continue
-        stripped = token.strip()
-        if stripped.startswith('@') or stripped.startswith('[CQ:at,'):
-            continue
-        event_input = stripped
-        break
+    # 支持 /个人记录图[@某人] [项目]，如果有@则优先查询被@的人
+    event_input = resolve_event_input(event, "个人记录图")
 
     event_code: str | None = None
 

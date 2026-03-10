@@ -123,3 +123,22 @@ def resolve_target_qq(event: Any) -> str | None:
         return _pick_first_numeric(sender)
 
     return None
+
+
+def resolve_event_input(event: Any, command_name: str) -> str | None:
+    raw_message = getattr(event, "message_str", None)
+    if not isinstance(raw_message, str):
+        return None
+
+    text = raw_message.strip()
+    text = re.sub(rf"^/?{re.escape(command_name)}", "", text, count=1).strip()
+    if not text:
+        return None
+
+    text = re.sub(r"\[CQ:at,[^\]]+\]", " ", text)
+    text = re.sub(r"@\S+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        return None
+
+    return text.split(" ", 1)[0].strip() or None
