@@ -312,10 +312,13 @@ async def handle(plugin, event: AstrMessageEvent):
     """查询个人最佳成绩（图片版）- 通过绑定的QQ号获取该选手的个人最佳成绩
 
     用法:
-    /个人记录图 [项目]
+    /个人记录图 [@某人] [项目]
     示例: /个人记录图
     示例: /个人记录图 333
+    示例: /个人记录图 @某人
+    示例: /个人记录图 @某人 333
     示例: /个人记录图 三阶
+    （优先识别 QQ 消息里的真实艾特）
     """
     allowed, _ = await is_group_allowed(event)
     if not allowed:

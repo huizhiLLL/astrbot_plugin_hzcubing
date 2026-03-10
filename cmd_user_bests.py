@@ -15,6 +15,7 @@ async def handle(plugin, event: AstrMessageEvent):
     示例: /个人记录 333
     示例: /个人记录 @某人
     示例: /个人记录 @某人 333
+    （优先识别 QQ 消息里的真实艾特）
     示例: /个人记录 三阶
     """
     allowed, _ = await is_group_allowed(event)
