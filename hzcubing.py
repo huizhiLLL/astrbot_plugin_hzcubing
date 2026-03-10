@@ -7,7 +7,7 @@ import aiohttp
 from astrbot.api import logger
 
 # API 配置
-API_BASE_URL = "https://hzcubing.club/api"
+API_BASE_URL = "https://api.hzcubing.club/api"
 REQUEST_TIMEOUT = 10
 
 # 官方项目顺序列表（用于排序）
