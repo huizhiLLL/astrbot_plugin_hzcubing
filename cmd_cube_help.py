@@ -63,6 +63,11 @@ def _prepare_commands_data() -> dict:
         "subtitle": "魔方相关命令一览",
         "commands": [
             {
+                "name": "/绑定",
+                "desc": "绑定网站昵称到你的 QQ，后续个人记录和录入会直接用绑定信息",
+                "example": "/绑定 会枝"
+            },
+            {
                 "name": "/one",
                 "desc": "查询 one 平台个人成绩",
                 "example": "/one 李华 或 /one 1234"
@@ -86,6 +91,16 @@ def _prepare_commands_data() -> dict:
                 "name": "/宿敌",
                 "desc": "查询 WCA 宿敌",
                 "example": "/宿敌 李华"
+            },
+            {
+                "name": "/个人记录",
+                "desc": "查询绑定 QQ 对应账号的个人记录，也支持 @ 某人查询",
+                "example": "/个人记录 或 /个人记录 @某人 333"
+            },
+            {
+                "name": "/录入",
+                "desc": "向绑定账号录入成绩，需要先完成 /绑定",
+                "example": "/录入 333 12.34 13.45 GAN11MPRO CFOP"
             },
             {
                 "name": "/pr",
@@ -232,7 +247,7 @@ def _help_card_template() -> str:
       </div>
 
       <div class="footer">
-        <div class="footer-text">发送命令即可使用，如 /one 李华</div>
+        <div class="footer-text">发送命令即可使用，如 /one 李华；想用 /个人记录 和 /录入，先 /绑定 昵称 会更方便</div>
       </div>
     </div>
   </body>
