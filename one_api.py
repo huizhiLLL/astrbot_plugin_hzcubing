@@ -1,12 +1,10 @@
 import asyncio
-import json
-from urllib.parse import quote
 from typing import Any
 
 import aiohttp
 from astrbot.api import logger
 
-# 个人记录API配置
+# one 后端 API 配置
 PERSONAL_RECORD_API_BASE = "https://ss.sxmfxh.com"
 REQUEST_TIMEOUT = 10  # 请求超时时间（秒）
 
@@ -102,17 +100,16 @@ class PersonalRecordAPIClient:
             size: 每页数量，默认5
         """
         session = await self._ensure_session()
-        
-        query_params = {
+        url = f"{self.base_url}/api/user"
+        params = {
+            "type": "list",
             "searchInput": search_input,
             "page": page,
             "size": size,
         }
-        query_json = json.dumps(query_params, ensure_ascii=False)
-        url = f"{self.base_url}/users/getUsers?query={quote(query_json)}"
         
         try:
-            async with session.post(url) as response:
+            async with session.get(url, params=params) as response:
                 if response.status == 200:
                     return await response.json()
                 else:
@@ -143,13 +140,11 @@ class PersonalRecordAPIClient:
             u_id: 用户ID
         """
         session = await self._ensure_session()
-        
-        query_params = {"u_id": u_id}
-        query_json = json.dumps(query_params)
-        url = f"{self.base_url}/grades/getGradesAndRank?query={quote(query_json)}"
+        url = f"{self.base_url}/api/grade/grade-rank"
+        params = {"u_id": u_id}
         
         try:
-            async with session.post(url) as response:
+            async with session.get(url, params=params) as response:
                 if response.status == 200:
                     return await response.json()
                 else:
