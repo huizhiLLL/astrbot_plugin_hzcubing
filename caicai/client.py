@@ -42,6 +42,9 @@ EVENT_ORDER = [
 
 EVENT_CODE_ALIASES = {
     "clk": "clock",
+    "minx": "meg",
+    "py": "pyram",
+    "sk": "skewb",
 }
 
 DISPLAY_NAME_MAP = {
