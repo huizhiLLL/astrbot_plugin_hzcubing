@@ -40,33 +40,28 @@ EVENT_ORDER = [
     "smartplayer",
 ]
 
-EVENT_NAME_MAP = {
-    "333": "333",
-    "三阶": "333",
-    "三速": "333",
-    "222": "222",
-    "二阶": "222",
-    "二速": "222",
-    "333oh": "333oh",
-    "三单": "333oh",
-    "单手": "333oh",
-    "444": "444",
-    "四阶": "444",
-    "555": "555",
-    "五阶": "555",
-    "clock": "clock",
-    "clk": "clock",
-    "魔表": "clock",
-    "meg": "meg",
-    "五魔方": "meg",
-    "pyram": "pyram",
-    "金字塔": "pyram",
-    "skewb": "skewb",
-    "斜转": "skewb",
-    "e333": "e333",
-    "智能三阶": "e333",
-    "moyuwcu": "moyuwcu",
-    "smartplayer": "smartplayer",
+DISPLAY_NAME_MAP = {
+    "333": "三阶",
+    "222": "二阶",
+    "333oh": "三单",
+    "444": "四阶",
+    "555": "五阶",
+    "666": "六阶",
+    "777": "七阶",
+    "clock": "魔表",
+    "meg": "五魔",
+    "pyram": "金字塔",
+    "skewb": "斜转",
+    "sq1": "SQ1",
+    "333bf": "三盲",
+    "444bf": "四盲",
+    "555bf": "五盲",
+    "333mbf": "多盲",
+    "333fm": "最少步",
+    "fto": "FTO",
+    "e333": "GAN智能",
+    "moyuwcu": "魔域智能",
+    "smartplayer": "奇艺智能",
 }
 
 
@@ -79,8 +74,8 @@ def is_tcid(value: str) -> bool:
     return bool(re.match(r"^TC\d{4}[A-Z0-9]+$", value.upper()))
 
 
-def normalize_event_name(event: str) -> str:
-    return EVENT_NAME_MAP.get(event, event)
+def display_event_name(event: str) -> str:
+    return DISPLAY_NAME_MAP.get(event, event)
 
 
 def format_centiseconds(value: int | None) -> str:
@@ -221,7 +216,8 @@ class CaicaiClient:
         for event_code, result in ranking.items():
             rows.append(
                 {
-                    "event": normalize_event_name(event_code),
+                    "event_code": event_code,
+                    "event": display_event_name(event_code),
                     "best": format_centiseconds(result.get("best")),
                     "average": format_centiseconds(result.get("average")),
                     "ranking_single_site": result.get("ranking_single_site"),
@@ -230,10 +226,14 @@ class CaicaiClient:
             )
         rows.sort(
             key=lambda item: (
-                EVENT_ORDER.index(item["event"]) if item["event"] in EVENT_ORDER else len(EVENT_ORDER),
+                EVENT_ORDER.index(item["event_code"])
+                if item["event_code"] in EVENT_ORDER
+                else len(EVENT_ORDER),
                 item["event"],
             )
         )
+        for item in rows:
+            item.pop("event_code", None)
         return {
             "name": info.get("name"),
             "name_en": info.get("name_en"),
