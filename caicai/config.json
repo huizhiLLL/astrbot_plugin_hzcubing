@@ -1,0 +1,32 @@
+{
+  "env": "tcb-6iiwri65nd3a26m-0c7rb11d10fc",
+  "endpoint": "https://tcb-api.tencentcloudapi.com/web",
+  "expires_at": "2026-03-22T11:32:26+08:00",
+  "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjlkMWRjMzFlLWI0ZDAtNDQ4Yi1hNzZmLWIwY2M2M2Q4MTQ5OCJ9.eyJpc3MiOiJodHRwczovL3RjYi02aWl3cmk2NW5kM2EyNm0tMGM3cmIxMWQxMGZjLmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImhqeHp5eXptaDdqblJfVmJIM1dSLWciLCJhdWQiOiJ0Y2ItNmlpd3JpNjVuZDNhMjZtLTBjN3JiMTFkMTBmYyIsImV4cCI6MTc3MzUwMDQ3NCwiaWF0IjoxNzczNDkzMjc0LCJub25jZSI6ImNhZDUxY2NlLWY2NDktNDUzZi04ZDQzLTFjNGYxOWI3YTExNiIsImF0X2hhc2giOiJfME5mNDRGdVFiRzB6Z3lYNGF6MTZBIiwibmFtZSI6IkFub255bW91cyIsInNjb3BlIjoiYW5vbnltb3VzIiwicHJvamVjdF9pZCI6InRjYi02aWl3cmk2NW5kM2EyNm0tMGM3cmIxMWQxMGZjIiwibWV0YSI6eyJ3eE9wZW5JZCI6IiIsInd4VW5pb25JZCI6IiJ9LCJ1c2VyX2lkIjoiaGp4enl5em1oN2puUl9WYkgzV1ItZyIsInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.DuZ3if2_KM_kD1DixFXYiE3IDThNClrwl8kiECTp12egQIpP8HjAuH174YXu5J2NROI2njbeZBhkXRo8Y_AbCyv592WJKfkxscptdASoq9yk8TNViCgIkqRLPYChqnXGUj03JcUJjJ7ZL23W4jHV7r3RZwhLkBUZBlljyoD3FNp-eyaBtx_PQLrEw3McEB7PFeOPIaST0bQzgcNkBJBQKmiB43Y3JIlm6ksijYP-RI_i_oO0tLIyTgz5vRA3JC9v5AaoBEIM1hcgjq_H6n5fTAJ0DvwRfjstybnXORy-u9SwPKzcxFo0JVy_Q35kRq8iWK0ogC_NBOxeSxuvElt5CA",
+  "uni_id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIyYWQ2NjZjZTY2ZjJiZTEyMGM3Y2Y1NDMwMzY0NDhmZCIsInJvbGUiOltdLCJwZXJtaXNzaW9uIjpbXSwiaWF0IjoxNzczNDkzNTQ2LCJleHAiOjE3NzQyMTM1NDZ9.vhD4HXw2yXSE5-CFQ35swYgWvVS2lxXbeHvnh0K6N2U",
+  "client_info": {
+    "PLATFORM": "mp-weixin",
+    "OS": "windows",
+    "APPID": "__UNI__7BAD580",
+    "DEVICEID": "17473082713441898577",
+    "scene": 1260,
+    "appName": "topcubers-client",
+    "appId": "__UNI__7BAD580",
+    "appVersion": "1.0.0",
+    "appVersionCode": "100",
+    "appLanguage": "zh-Hans",
+    "hostVersion": "4.1.7.59",
+    "hostName": "WeChat",
+    "uniPlatform": "mp-weixin",
+    "uniCompilerVersion": "4.87",
+    "uniRuntimeVersion": "4.87",
+    "deviceId": "17473082713441898577",
+    "deviceType": "phone",
+    "deviceBrand": "microsoft",
+    "deviceModel": "microsoft",
+    "osName": "windows",
+    "osVersion": "Unknown",
+    "locale": "zh-Hans",
+    "LOCALE": "zh-Hans"
+  }
+}
