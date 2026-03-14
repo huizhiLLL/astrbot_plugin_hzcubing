@@ -235,6 +235,57 @@ class APIClient:
 
         return await self._request("POST", "/auth/submit-record-by-qq", data=payload)
 
+    async def get_leaderboard(self, event: str, rank_type: str, limit: int = 10) -> dict[str, Any]:
+        records_result = await self._request(
+            "GET",
+            "/records",
+            params={"event": event, "pageSize": 2000}
+        )
+        if records_result.get("code") != 200:
+            return records_result
+
+        records = records_result.get("data", []) or []
+        time_field = "singleSeconds" if rank_type == "single" else "averageSeconds"
+        user_best_map: dict[str, dict[str, Any]] = {}
+
+        for record in records:
+            time_value = record.get(time_field)
+            if time_value is None:
+                continue
+
+            user_id = str(record.get("userId") or "")
+            if not user_id:
+                continue
+
+            existing = user_best_map.get(user_id)
+            if existing is None or time_value < existing.get(time_field):
+                user_best_map[user_id] = record
+
+        sorted_records = sorted(
+            user_best_map.values(),
+            key=lambda item: item.get(time_field, float("inf"))
+        )[:limit]
+
+        leaderboard = [
+            {
+                "rank": index + 1,
+                "nickname": item.get("nickname") or "无名高手",
+                "seconds": item.get(time_field),
+                "userId": item.get("userId"),
+            }
+            for index, item in enumerate(sorted_records)
+        ]
+
+        return {
+            "code": 200,
+            "message": "Success",
+            "data": {
+                "event": event,
+                "type": rank_type,
+                "leaderboard": leaderboard,
+            }
+        }
+
     async def fetch_meme_events(self) -> dict[str, Any]:
         return {
             "code": 200,

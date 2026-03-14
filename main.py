@@ -17,6 +17,7 @@ from .cmd_bind import handle as handle_bind
 from .cmd_submit_record import handle as handle_submit_record
 from .cmd_user_bests import handle as handle_user_bests
 from .cmd_user_bests_pic import handle as handle_user_bests_pic
+from .cmd_leaderboard import handle as handle_leaderboard
 from .cmd_cto import handle as handle_cto
 from .wenjun_cube import handle as handle_wenjun_cube
 
@@ -85,6 +86,11 @@ class HZCubingPlugin(Star):
     @filter.command("个人记录图")
     async def get_user_bests_pic_command(self, event: AstrMessageEvent):
         async for result in handle_user_bests_pic(self, event):
+            yield result
+
+    @filter.command("排行榜")
+    async def leaderboard_command(self, event: AstrMessageEvent):
+        async for result in handle_leaderboard(self, event):
             yield result
 
     @filter.command("cto", alias={"CTO"})
