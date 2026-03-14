@@ -40,6 +40,10 @@ EVENT_ORDER = [
     "smartplayer",
 ]
 
+EVENT_CODE_ALIASES = {
+    "clk": "clock",
+}
+
 DISPLAY_NAME_MAP = {
     "333": "三阶",
     "222": "二阶",
@@ -75,7 +79,8 @@ def is_tcid(value: str) -> bool:
 
 
 def display_event_name(event: str) -> str:
-    return DISPLAY_NAME_MAP.get(event, event)
+    canonical = EVENT_CODE_ALIASES.get(event, event)
+    return DISPLAY_NAME_MAP.get(canonical, canonical)
 
 
 def format_centiseconds(value: int | None) -> str:
@@ -214,9 +219,10 @@ class CaicaiClient:
         info = page_data.get("info", {}) or {}
         rows = []
         for event_code, result in ranking.items():
+            canonical_code = EVENT_CODE_ALIASES.get(event_code, event_code)
             rows.append(
                 {
-                    "event_code": event_code,
+                    "event_code": canonical_code,
                     "event": display_event_name(event_code),
                     "best": format_centiseconds(result.get("best")),
                     "average": format_centiseconds(result.get("average")),
