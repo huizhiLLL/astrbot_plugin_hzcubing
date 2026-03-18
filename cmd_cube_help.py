@@ -68,9 +68,14 @@ def _prepare_commands_data() -> dict:
                 "example": "/one 李华 或 /one 1234"
             },
             {
+                "name": "/wca绑定",
+                "desc": "绑定你的 WCAID 到 QQ，之后 /wca 可以直接查询，也支持 @ 某人查绑定结果",
+                "example": "/wca绑定 2026LIHU01 或 /wca绑定 李华"
+            },
+            {
                 "name": "/wca",
-                "desc": "查询 WCA 个人成绩",
-                "example": "/wca 李华 或 /wca 2026LHUA01"
+                "desc": "查询 WCA 个人成绩；不带参数时默认查询自己绑定的 WCAID",
+                "example": "/wca 或 /wca 李华 或 /wca @某人"
             },
             {
                 "name": "/wcapic",
@@ -232,7 +237,7 @@ def _help_card_template() -> str:
       </div>
 
       <div class="footer">
-        <div class="footer-text">发送命令即可使用，如 /one 李华</div>
+        <div class="footer-text">发送命令即可使用，如 /one 李华 或 /wca绑定 2026LIHU01</div>
       </div>
     </div>
   </body>

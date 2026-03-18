@@ -106,17 +106,18 @@ def ensure_wca_query(plugin) -> tuple[bool, str | None]:
     global WCAQuery, format_wca_cs_time, WCA_EVENT_CODES
 
     if WCAQuery is None or format_wca_cs_time is None or not WCA_EVENT_CODES:
+        module_name = "astrbot_plugin_wca.wca_query"
+        package_root = str(Path(__file__).resolve().parent.parent)
+        if package_root not in sys.path:
+            sys.path.insert(0, package_root)
+
         try:
-            mod = import_module("astrbot_plugin_wca.wca_query")
-        except ImportError:
-            try:
-                wca_dir = str((Path(__file__).resolve().parent.parent / "astrbot_plugin_wca").resolve())
-                if wca_dir not in sys.path:
-                    sys.path.insert(0, wca_dir)
-                mod = import_module("wca_query")
-            except Exception as e:
-                logger.error(f"导入 WCA 模块失败: {e}")
-                return False, "未找到 WCA 插件，请先安装/启用 astrbot_plugin_wca"
+            mod = import_module(module_name)
+        except Exception as e:
+            logger.error(f"导入 WCA 模块失败: {e}")
+            if isinstance(e, ImportError):
+                return False, "未找到或无法加载 astrbot_plugin_wca，请确认插件目录和依赖完整"
+            return False, f"加载 WCA 插件失败：{e}"
 
         try:
             WCAQuery = getattr(mod, "WCAQuery", None)

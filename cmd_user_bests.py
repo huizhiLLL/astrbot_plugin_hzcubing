@@ -3,24 +3,27 @@ from astrbot.api.event import AstrMessageEvent
 
 from .group_policy import is_group_allowed
 from .hzcubing import EVENT_NAME_MAP, OFFICIAL_EVENT_CODES, OFFICIAL_EVENT_ORDER, format_time_seconds
+from .cmd_target_qq import resolve_event_input, resolve_target_qq
 
 
 async def handle(plugin, event: AstrMessageEvent):
     """查询个人最佳成绩 - 通过绑定的QQ号获取该选手的个人最佳成绩
     
     用法:
-    /个人记录 [项目]
+    /个人记录 [@某人] [项目]
     示例: /个人记录
     示例: /个人记录 333
+    示例: /个人记录 @某人
+    示例: /个人记录 @某人 333
+    （优先识别 QQ 消息里的真实艾特）
     示例: /个人记录 三阶
     """
     allowed, _ = await is_group_allowed(event)
     if not allowed:
         return
 
-    cmd_tokens = plugin.parse_commands(event.message_str)
+    event_input = resolve_event_input(event, "个人记录")
 
-    event_input = cmd_tokens.get(1)
     event_code = None
 
     if event_input:
@@ -34,10 +37,10 @@ async def handle(plugin, event: AstrMessageEvent):
                 ).use_t2i(False)
                 return
 
-    qq_id = event.get_sender_id()
+    qq_id = resolve_target_qq(event)
     if not qq_id:
         yield event.plain_result(
-            "哎呀，拿不到你的 QQ 号呢，要在 QQ 里用才行哦~"
+            "哎呀，拿不到目标 QQ 号呢，要在 QQ 里用才行哦~"
         ).use_t2i(False)
         return
 

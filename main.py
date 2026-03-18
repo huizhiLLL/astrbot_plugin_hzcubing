@@ -17,8 +17,11 @@ from .cmd_bind import handle as handle_bind
 from .cmd_submit_record import handle as handle_submit_record
 from .cmd_user_bests import handle as handle_user_bests
 from .cmd_user_bests_pic import handle as handle_user_bests_pic
+from .cmd_leaderboard import handle as handle_leaderboard
 from .cmd_cto import handle as handle_cto
 from .wenjun_cube import handle as handle_wenjun_cube
+from .caicai import CaicaiClient
+from .caicai.command import handle as handle_caicai
 
 
 @register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.1")
@@ -32,6 +35,7 @@ class HZCubingPlugin(Star):
             self.personal_record_client,
             format_time_ms
         )
+        self.caicai_client = CaicaiClient()
         self.wca_query = None
 
     async def initialize(self):
@@ -40,6 +44,7 @@ class HZCubingPlugin(Star):
     async def terminate(self):
         await self.hzcubing_service.api_client.close()
         await self.personal_record_client.close()
+        await self.caicai_client.close()
         logger.info("会枝cubing 插件已卸载")
 
     @filter.command("cube帮助")
@@ -87,6 +92,11 @@ class HZCubingPlugin(Star):
         async for result in handle_user_bests_pic(self, event):
             yield result
 
+    @filter.command("排行榜")
+    async def leaderboard_command(self, event: AstrMessageEvent):
+        async for result in handle_leaderboard(self, event):
+            yield result
+
     @filter.command("cto", alias={"CTO"})
     async def cto_scramble_command(self, event: AstrMessageEvent):
         async for result in handle_cto(event):
@@ -95,4 +105,9 @@ class HZCubingPlugin(Star):
     @filter.command("俊改")
     async def wenjun_cube_command(self, event: AstrMessageEvent):
         async for result in handle_wenjun_cube(event):
+            yield result
+
+    @filter.command("赛赛")
+    async def caicai_command(self, event: AstrMessageEvent):
+        async for result in handle_caicai(self, event):
             yield result
