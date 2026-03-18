@@ -56,9 +56,9 @@ async def handle(plugin, event: AstrMessageEvent):
                 return
 
             if event_code:
-                header = f"看！{nickname}（{user_qq_id}）的 {event_code} 记录在这里哦："
+                header = f"{nickname}（{user_qq_id}）的 {event_code} 记录在这里哦："
             else:
-                header = f"看！{nickname}（{user_qq_id}）的个人记录在这里哦："
+                header = f"{nickname}（{user_qq_id}）的个人记录在这里哦："
 
             lines = []
             sorted_records = sorted(

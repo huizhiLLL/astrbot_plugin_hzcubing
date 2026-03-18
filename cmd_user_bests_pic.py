@@ -22,9 +22,9 @@ def _sort_best_records(best_records: list[dict]) -> list[dict]:
 
 def _format_text_response(nickname: str, user_qq_id: str, event_code: str | None, best_records: list[dict]) -> str:
     if event_code:
-        header = f"看！{nickname}（{user_qq_id}）的 {event_code} 记录在这里哦："
+        header = f"{nickname}（{user_qq_id}）的 {event_code} 记录在这里哦："
     else:
-        header = f"看！{nickname}（{user_qq_id}）的个人记录在这里哦："
+        header = f"{nickname}（{user_qq_id}）的个人记录在这里哦："
 
     lines: list[str] = []
     for record in _sort_best_records(best_records):

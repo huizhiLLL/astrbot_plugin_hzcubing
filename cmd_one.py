@@ -47,7 +47,7 @@ async def handle(plugin, event: AstrMessageEvent):
         if not u_id and rank_data:
             u_id = rank_data[0].get("u_id")
 
-        header = f"看！{user_name}（{u_id}）在 one 平台的成绩在这里哦：\n"
+        header = f"{user_name}（{u_id}）在 one 平台的成绩为：\n"
         lines = []
 
         sorted_records = sorted(rank_data, key=lambda x: x.get("e_id", 0))
