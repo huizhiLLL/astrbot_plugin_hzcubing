@@ -7,6 +7,7 @@ from .hzcubing import (
     EXTRA_EVENT_NAMES,
     OFFICIAL_EVENT_CODES,
     format_time_seconds,
+    normalize_meme_event_input,
 )
 
 
@@ -47,6 +48,7 @@ async def handle(plugin, event: AstrMessageEvent):
         return
 
     event_input_stripped = event_input.strip()
+    normalized_event_input = normalize_meme_event_input(event_input_stripped)
     event_code = EVENT_NAME_MAP.get(event_input_stripped)
 
     if not event_code:
@@ -58,6 +60,8 @@ async def handle(plugin, event: AstrMessageEvent):
             await plugin.hzcubing_service._ensure_meme_events()
             if event_input_stripped in plugin.hzcubing_service.meme_events_cache:
                 event_code = plugin.hzcubing_service.meme_events_cache[event_input_stripped]
+            elif normalized_event_input in plugin.hzcubing_service.meme_events_cache:
+                event_code = plugin.hzcubing_service.meme_events_cache[normalized_event_input]
 
     if not event_code:
         yield event.plain_result(

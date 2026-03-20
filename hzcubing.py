@@ -40,7 +40,7 @@ EVENT_NAME_MAP = {
     "FTO": "fto", "fto": "fto",
 }
 
-# 先保留名字集合给命令层使用，但不再动态拉取数据库整活项目
+# 保留少量静态额外项目名，同时支持从后端动态拉取整活项目
 EXTRA_EVENT_NAMES = {
     "二阶镜面", "三阶镜面", "四阶镜面", "五阶镜面", "二阶FTO", "齿轮",
     "四阶华容道", "正阶连拧(2-7)", "异形连拧(5个)", "全项目连拧(12个)",
@@ -77,6 +77,12 @@ def normalize_event_code(event: str) -> str | None:
     if event in OFFICIAL_EVENT_CODES:
         return event
     return None
+
+
+def normalize_meme_event_input(event: str | None) -> str:
+    if not event:
+        return ""
+    return "".join(str(event).strip().split())
 
 
 def parse_time_to_seconds(value: str | float | int | None) -> float | None:
@@ -287,11 +293,7 @@ class APIClient:
         }
 
     async def fetch_meme_events(self) -> dict[str, Any]:
-        return {
-            "code": 200,
-            "message": "整活项目迁移未完成，已暂时禁用动态拉取",
-            "data": [],
-        }
+        return await self._request("GET", "/meme-events")
 
     async def close(self):
         if self.session and not self.session.closed:
@@ -309,5 +311,19 @@ class HZCubingService:
         now = time.time()
         if self.meme_events_cache and (now - self.meme_events_last_fetch < self.MEME_CACHE_DURATION):
             return
-        self.meme_events_cache = {}
+
+        result = await self.api_client.fetch_meme_events()
+        next_cache: dict[str, str] = {}
+
+        if result.get("code") == 200:
+            for item in result.get("data", []) or []:
+                event_code = str(item.get("id") or "").strip()
+                event_name = str(item.get("name") or "").strip()
+                if not event_code:
+                    continue
+                next_cache[event_code] = event_code
+                if event_name:
+                    next_cache[event_name] = event_code
+
+        self.meme_events_cache = next_cache
         self.meme_events_last_fetch = now

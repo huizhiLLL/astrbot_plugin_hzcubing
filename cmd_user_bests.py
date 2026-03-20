@@ -2,7 +2,13 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
 from .group_policy import is_group_allowed
-from .hzcubing import EVENT_NAME_MAP, OFFICIAL_EVENT_CODES, OFFICIAL_EVENT_ORDER, format_time_seconds
+from .hzcubing import (
+    EVENT_NAME_MAP,
+    OFFICIAL_EVENT_CODES,
+    OFFICIAL_EVENT_ORDER,
+    format_time_seconds,
+    normalize_meme_event_input,
+)
 from .cmd_target_qq import resolve_event_input, resolve_target_qq
 
 
@@ -27,15 +33,23 @@ async def handle(plugin, event: AstrMessageEvent):
     event_code = None
 
     if event_input:
-        event_code = EVENT_NAME_MAP.get(event_input.strip())
+        event_input_stripped = event_input.strip()
+        normalized_event_input = normalize_meme_event_input(event_input_stripped)
+        event_code = EVENT_NAME_MAP.get(event_input_stripped)
         if not event_code:
-            if event_input.strip() in OFFICIAL_EVENT_CODES:
-                event_code = event_input.strip()
+            if event_input_stripped in OFFICIAL_EVENT_CODES:
+                event_code = event_input_stripped
             else:
-                yield event.plain_result(
-                    f"找不到这个项目呢：{event_input}"
-                ).use_t2i(False)
-                return
+                await plugin.hzcubing_service._ensure_meme_events()
+                if event_input_stripped in plugin.hzcubing_service.meme_events_cache:
+                    event_code = plugin.hzcubing_service.meme_events_cache[event_input_stripped]
+                elif normalized_event_input in plugin.hzcubing_service.meme_events_cache:
+                    event_code = plugin.hzcubing_service.meme_events_cache[normalized_event_input]
+                else:
+                    yield event.plain_result(
+                        f"找不到这个项目呢：{event_input}"
+                    ).use_t2i(False)
+                    return
 
     qq_id = resolve_target_qq(event)
     if not qq_id:
