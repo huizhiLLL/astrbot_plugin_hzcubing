@@ -164,13 +164,13 @@ class APIClient:
                 "single": {
                     "seconds": item.get("bestSingleSeconds"),
                     "holderNickname": item.get("bestSingleNickname"),
-                    "userId": item.get("bestSingleUserId"),
+                    "userId": item.get("bestSingleUserNo") or item.get("bestSingleUserId"),
                     "timestamp": item.get("bestSingleTimestamp"),
                 } if item.get("bestSingleSeconds") is not None else None,
                 "average": {
                     "seconds": item.get("bestAverageSeconds"),
                     "holderNickname": item.get("bestAverageNickname"),
-                    "userId": item.get("bestAverageUserId"),
+                    "userId": item.get("bestAverageUserNo") or item.get("bestAverageUserId"),
                     "timestamp": item.get("bestAverageTimestamp"),
                 } if item.get("bestAverageSeconds") is not None else None,
             })
@@ -259,7 +259,7 @@ class APIClient:
             if time_value is None:
                 continue
 
-            user_id = str(record.get("userId") or "")
+            user_id = str(record.get("profileUserNo") or record.get("userId") or "")
             if not user_id:
                 continue
 
@@ -277,7 +277,7 @@ class APIClient:
                 "rank": index + 1,
                 "nickname": item.get("nickname") or "无名高手",
                 "seconds": item.get(time_field),
-                "userId": item.get("userId"),
+                "userId": item.get("profileUserNo") or item.get("userId"),
             }
             for index, item in enumerate(sorted_records)
         ]
