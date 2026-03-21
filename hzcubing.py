@@ -195,7 +195,7 @@ class APIClient:
             return user_result
 
         user = user_result.get("data", {}) or {}
-        user_id = user.get("id") or user.get("_id")
+        user_id = user.get("userNo") or user.get("id") or user.get("_id")
         if not user_id:
             return {"code": 500, "message": "User data missing id"}
 
