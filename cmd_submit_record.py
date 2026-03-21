@@ -8,6 +8,7 @@ from .hzcubing import (
     OFFICIAL_EVENT_CODES,
     format_time_seconds,
     normalize_meme_event_input,
+    parse_time_to_seconds,
 )
 
 
@@ -44,6 +45,32 @@ async def handle(plugin, event: AstrMessageEvent):
         yield event.plain_result(
             "单次成绩和平均成绩至少要给一个哦~\n"
             "用法: /录入 [项目] [单次成绩] [平均成绩] [魔方] [方法]"
+        ).use_t2i(False)
+        return
+
+    def _is_valid_time_token(value: str | None) -> bool:
+        if value is None:
+            return False
+        token = value.strip()
+        if not token:
+            return False
+        if token == "-":
+            return True
+        if token.upper() in {"DNF", "DNS"}:
+            return True
+        return parse_time_to_seconds(token) is not None
+
+    if single_time and not _is_valid_time_token(single_time):
+        yield event.plain_result(
+            f"参数格式不对哦，单次成绩位置收到了非时间字符串：{single_time}\n"
+            "请按空格重新录入，格式：/录入 [项目] [单次成绩] [平均成绩]"
+        ).use_t2i(False)
+        return
+
+    if average_time and not _is_valid_time_token(average_time):
+        yield event.plain_result(
+            f"参数格式不对哦，平均成绩位置收到了非时间字符串：{average_time}\n"
+            "请按空格重新录入，格式：/录入 [项目] [单次成绩] [平均成绩]"
         ).use_t2i(False)
         return
 
