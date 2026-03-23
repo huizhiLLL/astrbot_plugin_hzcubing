@@ -93,6 +93,11 @@ def _prepare_commands_data() -> dict:
                 "example": "/宿敌 李华"
             },
             {
+                "name": "/版本",
+                "desc": "查询宿敌数据库的版本日期",
+                "example": "/版本"
+            },
+            {
                 "name": "/pr",
                 "desc": "双平台 PR 查询",
                 "example": "/pr 李华 或 /pr 2026LIHU01 1234"
