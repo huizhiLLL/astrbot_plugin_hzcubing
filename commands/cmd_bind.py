@@ -1,7 +1,7 @@
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
-from .group_policy import is_group_allowed
+from ..utils.group_policy import is_group_allowed
 
 
 async def handle(plugin, event: AstrMessageEvent):

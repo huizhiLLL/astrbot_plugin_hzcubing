@@ -1,6 +1,6 @@
 name: astrbot_plugin_hzcubing
 display_name: hzcubing
-desc: hzcubing
-version: v1.0.1
+desc: hzcubing 社群成绩、绑定、录入、排行榜与赛赛相关功能。
+version: v1.0.3
 author: huizhi
 repo: https://github.com/huizhiLLL/astrbot_plugin_hzcubing

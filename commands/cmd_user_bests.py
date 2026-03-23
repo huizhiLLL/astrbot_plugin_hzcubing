@@ -1,15 +1,15 @@
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
-from .group_policy import is_group_allowed
-from .hzcubing import (
+from ..utils.group_policy import is_group_allowed
+from ..services.hzcubing import (
     EVENT_NAME_MAP,
     OFFICIAL_EVENT_CODES,
     OFFICIAL_EVENT_ORDER,
     format_time_seconds,
     normalize_meme_event_input,
 )
-from .cmd_target_qq import resolve_event_input, resolve_target_qq
+from ..utils.cmd_target_qq import resolve_event_input, resolve_target_qq
 
 
 async def handle(plugin, event: AstrMessageEvent):

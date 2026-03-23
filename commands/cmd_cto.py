@@ -1,6 +1,6 @@
 from astrbot.api.event import AstrMessageEvent
 
-from .cto_scramble import generate_cto_scramble
+from ..utils.cto_scramble import generate_cto_scramble
 
 
 async def handle(event: AstrMessageEvent):

@@ -1,8 +1,8 @@
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
 
-from .group_policy import is_group_allowed
-from .hzcubing import (
+from ..utils.group_policy import is_group_allowed
+from ..services.hzcubing import (
     EVENT_NAME_MAP,
     EXTRA_EVENT_NAMES,
     OFFICIAL_EVENT_CODES,
