@@ -108,8 +108,8 @@ async def handle(plugin, event: AstrMessageEvent):
             return
 
         lines = [f"{event_code} 的GR历史如下："]
-        lines.extend(_format_history_section("单次", single_history))
-        lines.extend(_format_history_section("平均", average_history))
+        lines.extend(_format_history_section("\n单次\n", single_history))
+        lines.extend(_format_history_section("\n平均\n", average_history))
 
         yield event.plain_result("\n".join(lines)).use_t2i(False)
     except Exception as e:
