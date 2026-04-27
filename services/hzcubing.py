@@ -241,6 +241,20 @@ class APIClient:
 
         return await self._request("POST", "/auth/submit-record-by-qq", data=payload)
 
+    async def create_meme_event(
+        self,
+        qq_id: str,
+        event_code: str,
+        event_name: str,
+        description: str = "",
+    ) -> dict[str, Any]:
+        return await self._request("POST", "/auth/create-meme-event", data={
+            "qqId": str(qq_id),
+            "eventCode": event_code,
+            "eventName": event_name,
+            "description": description,
+        })
+
     async def get_leaderboard(self, event: str, rank_type: str, limit: int = 10) -> dict[str, Any]:
         records_result = await self._request(
             "GET",

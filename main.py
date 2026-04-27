@@ -3,6 +3,7 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
 from .commands.cmd_bind import handle as handle_bind
+from .commands.cmd_create_meme_event import handle as handle_create_meme_event
 from .commands.cmd_cto import handle as handle_cto
 from .commands.cmd_gr import handle as handle_gr
 from .commands.cmd_leaderboard import handle as handle_leaderboard
@@ -44,6 +45,11 @@ class HZCubingPlugin(Star):
     @filter.command("录入")
     async def submit_record_command(self, event: AstrMessageEvent):
         async for result in handle_submit_record(self, event):
+            yield result
+
+    @filter.command("创建")
+    async def create_meme_event_command(self, event: AstrMessageEvent):
+        async for result in handle_create_meme_event(self, event):
             yield result
 
     @filter.command("个人记录")
