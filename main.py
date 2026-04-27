@@ -16,7 +16,7 @@ from .integrations.caicai.command import handle as handle_caicai
 from .services.hzcubing import HZCubingService, APIClient
 
 
-@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.3")
+@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.4")
 class HZCubingPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)

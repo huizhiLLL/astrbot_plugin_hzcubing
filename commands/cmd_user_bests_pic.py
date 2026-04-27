@@ -1,13 +1,13 @@
-import os
 from datetime import datetime
 
+import astrbot.api.message_components as Comp
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent
-from astrbot.core.utils.t2i.renderer import HtmlRenderer
 
 from ..utils.group_policy import is_group_allowed
 from ..services.hzcubing import EVENT_NAME_MAP, OFFICIAL_EVENT_CODES, OFFICIAL_EVENT_ORDER, format_time_seconds
 from ..utils.cmd_target_qq import resolve_event_input, resolve_target_qq
+from ..utils.pillow_cards import render_user_bests_card
 
 
 def _sort_best_records(best_records: list[dict]) -> list[dict]:
@@ -40,228 +40,6 @@ def _format_text_response(nickname: str, user_qq_id: str, event_code: str | None
     return f"{header}\n" + "\n".join(lines)
 
 
-def _template() -> str:
-    return r"""
-<!DOCTYPE html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #ecfeff 100%);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-        color: #0f172a;
-      }
-
-      .canvas {
-        width: 1200px;
-        margin: 0 auto;
-        padding: 48px;
-      }
-
-      .card {
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(148, 163, 184, 0.28);
-        border-radius: 20px;
-        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.10);
-        overflow: hidden;
-      }
-
-      .header {
-        padding: 28px 32px 18px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-        background: radial-gradient(1200px 260px at 20% 0%, rgba(99, 102, 241, 0.12), transparent 60%),
-                    radial-gradient(900px 240px at 85% 0%, rgba(6, 182, 212, 0.10), transparent 60%);
-      }
-
-      .kicker {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: rgba(15, 23, 42, 0.65);
-        font-size: 14px;
-        letter-spacing: 0.4px;
-      }
-
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 999px;
-        background: linear-gradient(135deg, #6366f1, #06b6d4);
-        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.22);
-      }
-
-      .title-row {
-        margin-top: 10px;
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 16px;
-      }
-
-      .title {
-        font-size: 28px;
-        font-weight: 800;
-        line-height: 1.2;
-        letter-spacing: 0.2px;
-      }
-
-      .meta {
-        margin-top: 10px;
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.28);
-        background: rgba(255, 255, 255, 0.70);
-        font-size: 13px;
-        color: rgba(15, 23, 42, 0.75);
-      }
-
-      .pill strong {
-        font-weight: 700;
-        color: rgba(15, 23, 42, 0.92);
-      }
-
-      .body {
-        padding: 22px 26px 30px;
-      }
-
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-        border-spacing: 0;
-        overflow: hidden;
-      }
-
-      .table thead th {
-        text-align: left;
-        font-size: 13px;
-        letter-spacing: 0.4px;
-        font-weight: 700;
-        color: rgba(15, 23, 42, 0.60);
-        padding: 14px 14px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.22);
-        background: rgba(248, 250, 252, 0.65);
-      }
-
-      .table thead th.right { text-align: right; }
-
-      .table tbody tr {
-        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-      }
-
-      .table tbody tr:nth-child(odd) {
-        background: rgba(255, 255, 255, 0.65);
-      }
-
-      .table tbody tr:nth-child(even) {
-        background: rgba(248, 250, 252, 0.52);
-      }
-
-      .table td {
-        padding: 14px 14px;
-        font-size: 16px;
-        color: rgba(15, 23, 42, 0.88);
-      }
-
-      .event {
-        font-weight: 700;
-        color: rgba(15, 23, 42, 0.92);
-      }
-
-      .right {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .time {
-        font-weight: 800;
-        color: rgba(2, 6, 23, 0.92);
-      }
-
-      .muted {
-        color: rgba(15, 23, 42, 0.55);
-        font-weight: 600;
-      }
-
-      .footer {
-        padding: 14px 26px 18px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        color: rgba(15, 23, 42, 0.45);
-        font-size: 12px;
-      }
-
-      .brand {
-        letter-spacing: 0.4px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="canvas">
-      <div class="card">
-        <div class="header">
-          <div class="kicker">
-            <span class="dot"></span>
-            <span>HZCubing · 个人最佳</span>
-          </div>
-          <div class="title-row">
-            <div class="title">{{ display_name }}</div>
-          </div>
-          <div class="meta">
-            <span class="pill">QQ：<strong>{{ qq_id }}</strong></span>
-            <span class="pill">记录数：<strong>{{ record_count }}</strong></span>
-            {% if event_code %}
-              <span class="pill">仅显示：<strong>{{ event_code }}</strong></span>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="body">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>项目</th>
-                <th class="right">单次</th>
-                <th class="right">平均</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in rows %}
-              <tr>
-                <td class="event">{{ row.event }}</td>
-                <td class="right time">{{ row.single }}</td>
-                <td class="right {% if row.avg == '-' %}muted{% else %}time{% endif %}">{{ row.avg }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="footer">
-          <span class="brand">Generated by hzcubing</span>
-          <span>{{ generated_at }}</span>
-        </div>
-      </div>
-    </div>
-  </body>
-</html>
-"""
-
-
 def _template_data(nickname: str, user_qq_id: str, event_code: str | None, best_records: list[dict]) -> dict:
     rows: list[dict] = []
     for record in _sort_best_records(best_records):
@@ -287,25 +65,8 @@ def _template_data(nickname: str, user_qq_id: str, event_code: str | None, best_
     }
 
 
-async def _render_pic(plugin, event: AstrMessageEvent, nickname: str, user_qq_id: str, event_code: str | None, best_records: list[dict]) -> str:
-    cfg = plugin.context.get_config(umo=event.unified_msg_origin)
-    endpoint = cfg.get("t2i_endpoint") if isinstance(cfg, dict) else None
-
-    renderer = HtmlRenderer(endpoint_url=endpoint)
-    await renderer.initialize()
-
-    return await renderer.render_custom_template(
-        _template(),
-        _template_data(nickname, user_qq_id, event_code, best_records),
-        return_url=False,
-        options={
-            "full_page": True,
-            "type": "jpeg",
-            "quality": 100,
-            "scale": "device",
-            "device_scale_factor_level": "ultra",
-        },
-    )
+def _render_pic(nickname: str, user_qq_id: str, event_code: str | None, best_records: list[dict]) -> bytes:
+    return render_user_bests_card(_template_data(nickname, user_qq_id, event_code, best_records))
 
 
 async def handle(plugin, event: AstrMessageEvent):
@@ -363,21 +124,14 @@ async def handle(plugin, event: AstrMessageEvent):
             yield event.plain_result(response_text).use_t2i(False)
             return
 
-        image_path: str | None = None
         try:
-            image_path = await _render_pic(plugin, event, nickname, user_qq_id, event_code, best_records)
+            image_bytes = _render_pic(nickname, str(user_qq_id), event_code, best_records)
             try:
-                await event.send(event.image_result(image_path))
+                await event.send(event.chain_result([Comp.Image.fromBytes(image_bytes)]))
             except Exception as send_err:
                 logger.error(f"个人记录图 发送超时或失败: {send_err}")
                 pic_text = _format_text_response(nickname or "你", str(user_qq_id), event_code, best_records)
                 yield event.plain_result("哎呀，图片发送超时啦，先为你展示文字版吧：\n\n" + pic_text).use_t2i(False)
-            finally:
-                if image_path and os.path.exists(image_path):
-                    try:
-                        os.remove(image_path)
-                    except Exception as e:
-                        logger.error(f"清理临时图片失败: {e}")
         except Exception as e:
             logger.error(f"个人记录图 渲染失败: {e}")
             pic_text = _format_text_response(nickname or "你", str(user_qq_id), event_code, best_records)
