@@ -78,7 +78,7 @@ async def handle(plugin, event: AstrMessageEvent):
 
     if not event_input:
         yield event.plain_result(
-            "要告诉小枝查哪个项目哦~\n"
+            "要说查哪个项目哦~\n"
             "用法：/gr历史 [项目]\n"
             "比如：/gr历史 333"
         ).use_t2i(False)

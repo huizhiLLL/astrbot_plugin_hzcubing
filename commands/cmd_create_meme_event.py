@@ -19,7 +19,7 @@ async def handle(plugin, event: AstrMessageEvent):
 
     if not event_name:
         yield event.plain_result(
-            "还没告诉小枝要创建什么项目呢~\n"
+            "还没说要创建什么项目呢~\n"
             "用法：/创建 [项目名]\n"
             "比如：/创建 三阶镜面"
         ).use_t2i(False)
@@ -27,7 +27,7 @@ async def handle(plugin, event: AstrMessageEvent):
 
     event_name = event_name.strip()
     if not event_name:
-        yield event.plain_result("项目名要有内容哦，别逗小枝啦~").use_t2i(False)
+        yield event.plain_result("项目名要有内容哦~").use_t2i(False)
         return
 
     qq_id = event.get_sender_id()
