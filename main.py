@@ -6,6 +6,7 @@ from .commands.cmd_bind import handle as handle_bind
 from .commands.cmd_create_meme_event import handle as handle_create_meme_event
 from .commands.cmd_cto import handle as handle_cto
 from .commands.cmd_gr import handle as handle_gr
+from .commands.cmd_gr_history import handle as handle_gr_history
 from .commands.cmd_leaderboard import handle as handle_leaderboard
 from .commands.cmd_submit_record import handle as handle_submit_record
 from .commands.cmd_user_bests import handle as handle_user_bests
@@ -16,7 +17,7 @@ from .integrations.caicai.command import handle as handle_caicai
 from .services.hzcubing import HZCubingService, APIClient
 
 
-@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.4")
+@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.5")
 class HZCubingPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -35,6 +36,11 @@ class HZCubingPlugin(Star):
     @filter.command("gr", alias={"GR"})
     async def best_records_command(self, event: AstrMessageEvent):
         async for result in handle_gr(self, event):
+            yield result
+
+    @filter.command("gr历史", alias={"GR历史"})
+    async def gr_history_command(self, event: AstrMessageEvent):
+        async for result in handle_gr_history(self, event):
             yield result
 
     @filter.command("绑定")

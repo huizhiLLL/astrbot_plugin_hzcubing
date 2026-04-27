@@ -183,6 +183,9 @@ class APIClient:
             }
         }
 
+    async def gr_history(self, event: str) -> dict[str, Any]:
+        return await self._request("GET", f"/records/gr-history/{event}")
+
     async def bind_user(self, qq_id: str, nickname: str) -> dict[str, Any]:
         return await self._request("POST", "/auth/bind-user-by-nickname", data={
             "qqId": str(qq_id),
