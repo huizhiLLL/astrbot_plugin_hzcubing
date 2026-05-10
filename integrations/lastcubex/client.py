@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 import aiohttp
@@ -6,6 +7,7 @@ from astrbot.api import logger
 
 BASE_URL = "https://api.kdcubeapp.com"
 REQUEST_TIMEOUT = 10
+MAX_RETRIES = 2
 HEADERS = {
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 14; 23127PN0CC Build/UKQ1.230804.001)",
     "Accept": "application/json, text/plain, */*",
@@ -64,7 +66,8 @@ def format_time_millis(time_millis: int | float | None) -> str:
 class LastCubeXClient:
     def __init__(self, base_url: str = BASE_URL, timeout: int = REQUEST_TIMEOUT):
         self.base_url = base_url.rstrip("/")
-        self.timeout = aiohttp.ClientTimeout(total=timeout)
+        self.timeout_seconds = timeout
+        self.timeout = aiohttp.ClientTimeout(total=timeout, connect=5, sock_read=timeout)
         self.session: aiohttp.ClientSession | None = None
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
@@ -72,15 +75,76 @@ class LastCubeXClient:
             self.session = aiohttp.ClientSession(timeout=self.timeout, headers=HEADERS)
         return self.session
 
+    async def _reset_session(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
+        self.session = None
+
     async def _post_json(self, endpoint: str, payload: dict[str, Any]) -> Any:
-        session = await self._ensure_session()
         url = f"{self.base_url}{endpoint}"
-        try:
-            async with session.post(url, json=payload) as response:
-                return await response.json(content_type=None)
-        except Exception as exc:
-            logger.error(f"LastCubeX 请求异常: {exc}")
-            return {"code": 500, "message": "请求异常", "error": str(exc)}
+        last_error: dict[str, Any] | None = None
+
+        for attempt in range(1, MAX_RETRIES + 1):
+            session = await self._ensure_session()
+            try:
+                async with session.post(url, json=payload) as response:
+                    if response.status >= 400:
+                        response_text = await response.text()
+                        logger.warning(
+                            f"LastCubeX 请求失败: endpoint={endpoint}, status={response.status}, "
+                            f"attempt={attempt}/{MAX_RETRIES}, body={response_text[:200]}"
+                        )
+                        last_error = {
+                            "code": response.status,
+                            "message": f"上游接口返回 HTTP {response.status}",
+                            "error": response_text[:200],
+                        }
+                        if response.status >= 500 and attempt < MAX_RETRIES:
+                            await self._reset_session()
+                            await asyncio.sleep(0.4 * attempt)
+                            continue
+                        return last_error
+                    return await response.json(content_type=None)
+            except asyncio.TimeoutError as exc:
+                logger.warning(
+                    f"LastCubeX 请求超时: endpoint={endpoint}, timeout={self.timeout_seconds}s, "
+                    f"attempt={attempt}/{MAX_RETRIES}, error={type(exc).__name__}"
+                )
+                last_error = {
+                    "code": 500,
+                    "message": "请求超时",
+                    "error": f"{type(exc).__name__}: timeout={self.timeout_seconds}s",
+                }
+            except (
+                aiohttp.ClientConnectionError,
+                aiohttp.ClientPayloadError,
+                aiohttp.ServerDisconnectedError,
+            ) as exc:
+                logger.warning(
+                    f"LastCubeX 连接异常: endpoint={endpoint}, attempt={attempt}/{MAX_RETRIES}, "
+                    f"error={type(exc).__name__}: {exc!r}"
+                )
+                last_error = {
+                    "code": 500,
+                    "message": "连接上游接口失败",
+                    "error": f"{type(exc).__name__}: {exc!r}",
+                }
+            except Exception as exc:
+                logger.error(
+                    f"LastCubeX 请求异常: endpoint={endpoint}, attempt={attempt}/{MAX_RETRIES}, "
+                    f"error={type(exc).__name__}: {exc!r}"
+                )
+                return {
+                    "code": 500,
+                    "message": "请求异常",
+                    "error": f"{type(exc).__name__}: {exc!r}",
+                }
+
+            if attempt < MAX_RETRIES:
+                await self._reset_session()
+                await asyncio.sleep(0.4 * attempt)
+
+        return last_error or {"code": 500, "message": "请求异常", "error": "unknown error"}
 
     async def get_all_ranking(self, event_input: str, limit: int = 10) -> dict[str, Any]:
         normalized_event = normalize_event_input(event_input)
