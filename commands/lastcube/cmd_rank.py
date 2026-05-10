@@ -7,7 +7,6 @@ from ...integrations.lastcubex import (
     format_time_millis,
     normalize_event_input,
 )
-from ...utils.group_policy import is_group_allowed
 
 
 async def handle(plugin, event: AstrMessageEvent):
@@ -16,10 +15,6 @@ async def handle(plugin, event: AstrMessageEvent):
     /lc总榜 [项目]
     /lc总榜 333
     """
-    allowed, _ = await is_group_allowed(event)
-    if not allowed:
-        return
-
     cmd_tokens = plugin.parse_commands(event.message_str)
     event_input = cmd_tokens.get(1)
 
