@@ -117,6 +117,18 @@ class LastCubeXClient:
         )
         return result
 
+    async def get_current_ranking(self, event_input: str, limit: int = 15) -> dict[str, Any]:
+        normalized_event = normalize_event_input(event_input)
+        if not normalized_event:
+            return {"code": 400, "message": "不支持的 LastCubeX 项目"}
+
+        result = await self._request_json(
+            "GET",
+            "/api/lastcubex/current-ranking",
+            params={"event": normalized_event, "limit": limit},
+        )
+        return result
+
     async def close(self):
         if self.session and not self.session.closed:
             await self.session.close()

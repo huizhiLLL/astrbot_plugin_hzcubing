@@ -6,6 +6,7 @@
 
 - `GET /health`
 - `GET /api/lastcubex/current-competition`
+- `GET /api/lastcubex/current-ranking?event=333&limit=10`
 - `POST /api/lastcubex/users/resolve`
 - `GET /api/lastcubex/all-ranking?event=333&limit=10`
 - `POST /api/lastcubex/all-ranking`

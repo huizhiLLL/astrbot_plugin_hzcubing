@@ -63,6 +63,8 @@ class LastCubeXProxyService:
             timeout=httpx.Timeout(REQUEST_TIMEOUT, connect=CONNECT_TIMEOUT),
         )
         self.all_ranking_cache: dict[tuple[str, int], tuple[float, dict[str, Any]]] = {}
+        self.current_ranking_cache: dict[tuple[str, int], tuple[float, dict[str, Any]]] = {}
+        self.current_competition_cache: tuple[float, dict[str, Any]] | None = None
 
     async def close(self):
         await self.client.aclose()
@@ -110,11 +112,30 @@ class LastCubeXProxyService:
     def _set_cached_all_ranking(self, event: str, limit: int, payload: dict[str, Any]):
         self.all_ranking_cache[(event, limit)] = (time.time(), payload)
 
+    def _get_cached_current_ranking(self, event: str, limit: int) -> dict[str, Any] | None:
+        cached = self.current_ranking_cache.get((event, limit))
+        if not cached:
+            return None
+        cached_at, payload = cached
+        if time.time() - cached_at > CACHE_TTL_SECONDS:
+            self.current_ranking_cache.pop((event, limit), None)
+            return None
+        return payload
+
+    def _set_cached_current_ranking(self, event: str, limit: int, payload: dict[str, Any]):
+        self.current_ranking_cache[(event, limit)] = (time.time(), payload)
+
     async def get_current_competition(self) -> dict[str, Any]:
+        if self.current_competition_cache:
+            cached_at, payload = self.current_competition_cache
+            if time.time() - cached_at <= CACHE_TTL_SECONDS:
+                return payload
         data = await self._post_json("/v2/competition/processing", {})
         if not isinstance(data, list):
             raise HTTPException(status_code=502, detail="周赛接口响应格式异常")
-        return {"code": 200, "message": "Success", "data": data}
+        payload = {"code": 200, "message": "Success", "data": data}
+        self.current_competition_cache = (time.time(), payload)
+        return payload
 
     async def resolve_users(self, users: list[str]) -> dict[str, Any]:
         filtered = [str(user).strip() for user in users if str(user).strip()]
@@ -175,6 +196,80 @@ class LastCubeXProxyService:
         self._set_cached_all_ranking(normalized_event, limit, payload)
         return payload
 
+    async def get_current_ranking(self, event: str, limit: int) -> dict[str, Any]:
+        normalized_event = normalize_event_input(event)
+        if not normalized_event:
+            raise HTTPException(status_code=400, detail="不支持的 LastCubeX 项目")
+
+        cached = self._get_cached_current_ranking(normalized_event, limit)
+        if cached is not None:
+            return cached
+
+        competition_payload = await self.get_current_competition()
+        competitions = competition_payload.get("data") or []
+        if not competitions:
+            raise HTTPException(status_code=502, detail="当前周赛为空")
+
+        competition = competitions[0] or {}
+        competition_id = str(competition.get("id") or "").strip()
+        supported_items = competition.get("items") or []
+        mapped_item = EVENT_MAP[normalized_event]
+        if not competition_id:
+            raise HTTPException(status_code=502, detail="当前周赛缺少 competition_id")
+        if mapped_item not in supported_items:
+            raise HTTPException(status_code=400, detail="当前周赛暂不支持该项目")
+
+        ranking_result = await self._post_json(
+            "/v2/competition/ranking",
+            {
+                "competition_id": competition_id,
+                "item": mapped_item,
+                "avg": 0,
+                "created": int(time.time() * 1000),
+                "limit": limit,
+            },
+        )
+        if not isinstance(ranking_result, list):
+            raise HTTPException(status_code=502, detail="当前周赛榜接口响应格式异常")
+
+        user_ids: list[str] = []
+        for record in ranking_result:
+            user_id = str(record.get("user_id") or "").strip()
+            if user_id and user_id not in user_ids:
+                user_ids.append(user_id)
+
+        nickname_map: dict[str, str] = {}
+        if user_ids:
+            users_result = await self._post_json("/v2/user/list", {"users": user_ids})
+            if not isinstance(users_result, list):
+                raise HTTPException(status_code=502, detail="用户资料接口响应格式异常")
+            nickname_map = {
+                str(user.get("id") or "").strip(): str(user.get("username") or "").strip()
+                for user in users_result
+                if str(user.get("id") or "").strip()
+            }
+
+        payload = {
+            "code": 200,
+            "message": "Success",
+            "data": {
+                "event": normalized_event,
+                "competition_id": competition_id,
+                "title": competition.get("title") or "",
+                "leaderboard": [
+                    {
+                        "rank": index,
+                        "nickname": nickname_map.get(str(record.get("user_id") or "").strip()) or "未知用户",
+                        "avg": record.get("avg"),
+                        "user_id": str(record.get("user_id") or "").strip(),
+                    }
+                    for index, record in enumerate(ranking_result, start=1)
+                ],
+            },
+        }
+        self._set_cached_current_ranking(normalized_event, limit, payload)
+        return payload
+
 
 app = FastAPI(title="LastCubeX Proxy", version="1.0.0")
 service = LastCubeXProxyService()
@@ -208,3 +303,13 @@ async def get_all_ranking(event: str, limit: int = 10):
 @app.post("/api/lastcubex/all-ranking")
 async def post_all_ranking(body: AllRankingBody):
     return await service.get_all_ranking(body.event, body.limit)
+
+
+@app.get("/api/lastcubex/current-ranking")
+async def get_current_ranking(event: str, limit: int = 15):
+    return await service.get_current_ranking(event, limit)
+
+
+@app.post("/api/lastcubex/current-ranking")
+async def post_current_ranking(body: AllRankingBody):
+    return await service.get_current_ranking(body.event, body.limit)

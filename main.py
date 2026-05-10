@@ -8,7 +8,10 @@ from .commands.cmd_cto import handle as handle_cto
 from .commands.cmd_gr import handle as handle_gr
 from .commands.cmd_gr_history import handle as handle_gr_history
 from .commands.cmd_leaderboard import handle as handle_leaderboard
-from .commands.lastcube import handle as handle_lastcube_rank
+from .commands.lastcube import (
+    handle_current_rank as handle_lastcube_current_rank,
+    handle_rank as handle_lastcube_rank,
+)
 from .commands.cmd_submit_record import handle as handle_submit_record
 from .commands.cmd_user_bests import handle as handle_user_bests
 from .commands.cmd_user_bests_pic import handle as handle_user_bests_pic
@@ -19,7 +22,7 @@ from .integrations.lastcubex import LastCubeXClient
 from .services.hzcubing import HZCubingService, APIClient
 
 
-@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.7")
+@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.8")
 class HZCubingPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -80,6 +83,11 @@ class HZCubingPlugin(Star):
     @filter.command("lc总榜", alias={"LC总榜"})
     async def lastcube_rank_command(self, event: AstrMessageEvent):
         async for result in handle_lastcube_rank(self, event):
+            yield result
+
+    @filter.command("lc", alias={"LC"})
+    async def lastcube_current_rank_command(self, event: AstrMessageEvent):
+        async for result in handle_lastcube_current_rank(self, event):
             yield result
 
     @filter.command("cto", alias={"CTO"})
