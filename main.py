@@ -8,22 +8,25 @@ from .commands.cmd_cto import handle as handle_cto
 from .commands.cmd_gr import handle as handle_gr
 from .commands.cmd_gr_history import handle as handle_gr_history
 from .commands.cmd_leaderboard import handle as handle_leaderboard
+from .commands.lastcube import handle as handle_lastcube_rank
 from .commands.cmd_submit_record import handle as handle_submit_record
 from .commands.cmd_user_bests import handle as handle_user_bests
 from .commands.cmd_user_bests_pic import handle as handle_user_bests_pic
 from .commands.wenjun_cube import handle as handle_wenjun_cube
 from .integrations.caicai import CaicaiClient
 from .integrations.caicai.command import handle as handle_caicai
+from .integrations.lastcubex import LastCubeXClient
 from .services.hzcubing import HZCubingService, APIClient
 
 
-@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.5")
+@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.6")
 class HZCubingPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         hzcubing_api_client = APIClient()
         self.hzcubing_service = HZCubingService(hzcubing_api_client)
         self.caicai_client = CaicaiClient()
+        self.lastcubex_client = LastCubeXClient()
 
     async def initialize(self):
         logger.info("会枝cubing 插件已加载")
@@ -31,6 +34,7 @@ class HZCubingPlugin(Star):
     async def terminate(self):
         await self.hzcubing_service.api_client.close()
         await self.caicai_client.close()
+        await self.lastcubex_client.close()
         logger.info("会枝cubing 插件已卸载")
 
     @filter.command("gr", alias={"GR"})
@@ -71,6 +75,11 @@ class HZCubingPlugin(Star):
     @filter.command("排行榜")
     async def leaderboard_command(self, event: AstrMessageEvent):
         async for result in handle_leaderboard(self, event):
+            yield result
+
+    @filter.command("lc总榜", alias={"LC总榜"})
+    async def lastcube_rank_command(self, event: AstrMessageEvent):
+        async for result in handle_lastcube_rank(self, event):
             yield result
 
     @filter.command("cto", alias={"CTO"})
