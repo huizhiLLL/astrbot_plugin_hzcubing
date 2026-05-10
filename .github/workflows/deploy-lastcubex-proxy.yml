@@ -1,0 +1,46 @@
+name: Deploy LastCubeX Proxy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/lastcubex_proxy/**"
+      - ".github/workflows/deploy-lastcubex-proxy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-lastcubex-proxy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload proxy files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.LASTCUBEX_PROXY_HOST }}
+          username: ${{ secrets.LASTCUBEX_PROXY_USER }}
+          key: ${{ secrets.LASTCUBEX_PROXY_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.LASTCUBEX_PROXY_PORT }}
+          source: "deploy/lastcubex_proxy/*"
+          target: ${{ secrets.LASTCUBEX_PROXY_DEPLOY_PATH }}
+          strip_components: 2
+
+      - name: Rebuild proxy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LASTCUBEX_PROXY_HOST }}
+          username: ${{ secrets.LASTCUBEX_PROXY_USER }}
+          key: ${{ secrets.LASTCUBEX_PROXY_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.LASTCUBEX_PROXY_PORT }}
+          script: |
+            set -e
+            mkdir -p ${{ secrets.LASTCUBEX_PROXY_DEPLOY_PATH }}
+            cd ${{ secrets.LASTCUBEX_PROXY_DEPLOY_PATH }}
+            docker compose up -d --build
