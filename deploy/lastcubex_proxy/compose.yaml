@@ -1,0 +1,7 @@
+services:
+  lastcubex-proxy:
+    build: .
+    container_name: lastcubex-proxy
+    restart: unless-stopped
+    ports:
+      - "18081:8000"

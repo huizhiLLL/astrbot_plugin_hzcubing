@@ -19,7 +19,7 @@ from .integrations.lastcubex import LastCubeXClient
 from .services.hzcubing import HZCubingService, APIClient
 
 
-@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.6")
+@register("astrbot_plugin_hzcubing", "huizhi", "hzcubing", "1.0.7")
 class HZCubingPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
