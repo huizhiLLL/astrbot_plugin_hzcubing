@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Any
 
 import aiohttp
@@ -6,8 +7,10 @@ from astrbot.api import logger
 
 
 BASE_URL = "https://api.kdcubeapp.com"
-REQUEST_TIMEOUT = 10
+REQUEST_TIMEOUT = 20
+CONNECT_TIMEOUT = 12
 MAX_RETRIES = 2
+CACHE_TTL_SECONDS = 180
 HEADERS = {
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 14; 23127PN0CC Build/UKQ1.230804.001)",
     "Accept": "application/json, text/plain, */*",
@@ -67,8 +70,13 @@ class LastCubeXClient:
     def __init__(self, base_url: str = BASE_URL, timeout: int = REQUEST_TIMEOUT):
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = timeout
-        self.timeout = aiohttp.ClientTimeout(total=timeout, connect=5, sock_read=timeout)
+        self.timeout = aiohttp.ClientTimeout(
+            total=timeout,
+            connect=CONNECT_TIMEOUT,
+            sock_read=timeout,
+        )
         self.session: aiohttp.ClientSession | None = None
+        self._all_ranking_cache: dict[tuple[str, int], tuple[float, dict[str, Any]]] = {}
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         if self.session is None or self.session.closed:
@@ -79,6 +87,21 @@ class LastCubeXClient:
         if self.session and not self.session.closed:
             await self.session.close()
         self.session = None
+
+    def _get_cached_all_ranking(self, event: str, limit: int) -> dict[str, Any] | None:
+        cache_key = (event, limit)
+        cached = self._all_ranking_cache.get(cache_key)
+        if not cached:
+            return None
+
+        cached_at, payload = cached
+        if time.time() - cached_at > CACHE_TTL_SECONDS:
+            self._all_ranking_cache.pop(cache_key, None)
+            return None
+        return payload
+
+    def _set_cached_all_ranking(self, event: str, limit: int, payload: dict[str, Any]):
+        self._all_ranking_cache[(event, limit)] = (time.time(), payload)
 
     async def _post_json(self, endpoint: str, payload: dict[str, Any]) -> Any:
         url = f"{self.base_url}{endpoint}"
@@ -151,6 +174,10 @@ class LastCubeXClient:
         if not normalized_event:
             return {"code": 400, "message": "不支持的 LastCubeX 项目"}
 
+        cached_result = self._get_cached_all_ranking(normalized_event, limit)
+        if cached_result is not None:
+            return cached_result
+
         ranking_result = await self._post_json(
             "/v2/competition/all/ranking",
             {
@@ -196,7 +223,7 @@ class LastCubeXClient:
                 }
             )
 
-        return {
+        result = {
             "code": 200,
             "message": "Success",
             "data": {
@@ -204,6 +231,8 @@ class LastCubeXClient:
                 "leaderboard": leaderboard,
             },
         }
+        self._set_cached_all_ranking(normalized_event, limit, result)
+        return result
 
     async def close(self):
         if self.session and not self.session.closed:
