@@ -115,6 +115,11 @@ async def handle(plugin, event: AstrMessageEvent):
 
         if result.get("code") == 200:
             data = result.get("data", {})
+            if not data:
+                yield event.plain_result("呜呜，成绩录入成功但没有返回详细信息呢...").use_t2i(False)
+                return
+
+            # 基本成绩字段
             event_name = data.get("event", event_code)
             single_seconds = data.get("singleSeconds")
             average_seconds = data.get("averageSeconds")
@@ -122,6 +127,7 @@ async def handle(plugin, event: AstrMessageEvent):
             method_name = data.get("method", "")
             nickname = data.get("nickname", "")
 
+            # GR 相关字段
             is_single_gr = data.get("isSingleGR", False)
             is_average_gr = data.get("isAverageGR", False)
             prev_single_best = data.get("previousSingleBest")

@@ -259,36 +259,28 @@ class APIClient:
         })
 
     async def get_leaderboard(self, event: str, rank_type: str, limit: int = 10) -> dict[str, Any]:
-        records_result = await self._request(
-            "GET",
-            "/records",
-            params={"event": event, "pageSize": 2000}
-        )
-        if records_result.get("code") != 200:
-            return records_result
+        """获取单项目排行榜
 
-        records = records_result.get("data", []) or []
+        Args:
+            event: 项目代码
+            rank_type: 排名类型，"single" 或 "average"
+            limit: 返回条数，默认10，最大200
+        """
+        params = {
+            "event": event,
+            "type": rank_type,
+            "limit": min(limit, 200),  # 接口最大限制200
+        }
+
+        result = await self._request("GET", "/records/leaderboard", params=params)
+        if result.get("code") != 200:
+            return result
+
+        # 接口返回的数据已经是按用户聚合并排序好的
+        leaderboard_data = result.get("data", []) or []
+
+        # 转换为统一格式，添加排名
         time_field = "singleSeconds" if rank_type == "single" else "averageSeconds"
-        user_best_map: dict[str, dict[str, Any]] = {}
-
-        for record in records:
-            time_value = record.get(time_field)
-            if time_value is None:
-                continue
-
-            user_id = str(record.get("profileUserNo") or record.get("userId") or "")
-            if not user_id:
-                continue
-
-            existing = user_best_map.get(user_id)
-            if existing is None or time_value < existing.get(time_field):
-                user_best_map[user_id] = record
-
-        sorted_records = sorted(
-            user_best_map.values(),
-            key=lambda item: item.get(time_field, float("inf"))
-        )[:limit]
-
         leaderboard = [
             {
                 "rank": index + 1,
@@ -296,12 +288,12 @@ class APIClient:
                 "seconds": item.get(time_field),
                 "userId": item.get("profileUserNo") or item.get("userId"),
             }
-            for index, item in enumerate(sorted_records)
+            for index, item in enumerate(leaderboard_data)
         ]
 
         return {
             "code": 200,
-            "message": "Success",
+            "message": result.get("message", "Success"),
             "data": {
                 "event": event,
                 "type": rank_type,
