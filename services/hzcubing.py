@@ -1,4 +1,6 @@
 import asyncio
+import os
+from datetime import datetime, timezone
 import time
 from decimal import Decimal, ROUND_DOWN
 from typing import Any
@@ -7,7 +9,7 @@ import aiohttp
 from astrbot.api import logger
 
 # API 配置
-API_BASE_URL = "https://api.hzcubing.fun/api"
+API_BASE_URL = "https://hzcubing.fun/api"
 REQUEST_TIMEOUT = 10
 
 # 官方项目顺序列表（用于排序）
@@ -110,8 +112,9 @@ def parse_time_to_seconds(value: str | float | int | None) -> float | None:
 
 
 class APIClient:
-    def __init__(self, base_url: str = API_BASE_URL, timeout: int = REQUEST_TIMEOUT):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url: str | None = None, timeout: int = REQUEST_TIMEOUT):
+        self.base_url = (base_url or os.getenv("HZCUBING_API_URL") or API_BASE_URL).rstrip("/")
+        self.token = os.getenv("HZCUBING_BOT_SECRET", "").strip()
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.session: aiohttp.ClientSession | None = None
 
@@ -127,73 +130,64 @@ class APIClient:
         params: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        headers = {}
+        if endpoint.startswith("/bot/"):
+            if not self.token:
+                return {"code": 503, "message": "成绩服务的机器人凭据尚未配置"}
+            headers["Authorization"] = f"Bearer {self.token}"
         session = await self._ensure_session()
-        url = f"{self.base_url}{endpoint}"
         try:
-            if method.upper() == "GET":
-                async with session.get(url, params=params or {}) as response:
-                    return await response.json(content_type=None)
-            if method.upper() == "POST":
-                async with session.post(url, json=data or {}) as response:
-                    return await response.json(content_type=None)
-            return {"code": 500, "message": "Unsupported HTTP method"}
+            async with session.request(
+                method, f"{self.base_url}{endpoint}", params=params, json=data,
+                headers=headers, allow_redirects=False,
+            ) as response:
+                payload = await response.json(content_type=None)
+                if 200 <= response.status < 300:
+                    return {"code": 200, "data": payload}
+                message = payload.get("message") if isinstance(payload, dict) else None
+                return {"code": response.status, "message": message or "成绩服务请求失败"}
         except asyncio.TimeoutError:
-            return {
-                "code": 500,
-                "message": "请求超时",
-                "error": f"请求超时（{self.timeout.total}秒）",
-            }
-        except Exception as e:
-            logger.error(f"API 请求异常: {e}")
-            return {
-                "code": 500,
-                "message": "请求异常",
-                "error": str(e),
-            }
+            return {"code": 503, "message": "成绩服务请求超时"}
+        except (aiohttp.ClientError, ValueError):
+            logger.warning("HZCubing API 请求失败")
+            return {"code": 503, "message": "暂时无法连接成绩服务"}
+
+    @staticmethod
+    def _timestamp(value: int | None) -> str | None:
+        return datetime.fromtimestamp(value / 1000, timezone.utc).isoformat() if value is not None else None
 
     async def best_records(self, event: str | None = None) -> dict[str, Any]:
         result = await self._request("GET", "/records/best", params={"event": event} if event else None)
         if result.get("code") != 200:
             return result
 
-        raw_records = result.get("data", []) or []
-        best_records = []
-        for item in raw_records:
-            best_records.append({
-                "event": item.get("event"),
-                "single": {
-                    "seconds": item.get("bestSingleSeconds"),
-                    "holderNickname": item.get("bestSingleNickname"),
-                    "userId": item.get("bestSingleUserNo") or item.get("bestSingleUserId"),
-                    "timestamp": item.get("bestSingleTimestamp"),
-                } if item.get("bestSingleSeconds") is not None else None,
-                "average": {
-                    "seconds": item.get("bestAverageSeconds"),
-                    "holderNickname": item.get("bestAverageNickname"),
-                    "userId": item.get("bestAverageUserNo") or item.get("bestAverageUserId"),
-                    "timestamp": item.get("bestAverageTimestamp"),
-                } if item.get("bestAverageSeconds") is not None else None,
-            })
-
-        return {
-            "code": 200,
-            "message": result.get("message", "Success"),
-            "data": {
-                "bestRecords": best_records
+        def holder(item):
+            if item is None:
+                return None
+            return {
+                "seconds": item["seconds"], "holderNickname": item["nickname"],
+                "userId": item["userNo"], "timestamp": self._timestamp(item["timestamp"]),
             }
-        }
+
+        return {"code": 200, "data": {"bestRecords": [
+            {"event": row["event"], "single": holder(row["single"]), "average": holder(row["average"])}
+            for row in result["data"]
+        ]}}
 
     async def gr_history(self, event: str) -> dict[str, Any]:
-        return await self._request("GET", f"/records/gr-history/{event}")
+        result = await self._request("GET", "/records/gr", params={"event": event})
+        if result["code"] != 200:
+            return result
+        return {"code": 200, "data": {metric: [
+            {"seconds": row[f"{metric}Seconds"], "nickname": row["nickname"], "timestamp": self._timestamp(row["timestamp"])}
+            for row in result["data"][metric]
+        ] for metric in ("single", "average")}}
 
-    async def bind_user(self, qq_id: str, nickname: str) -> dict[str, Any]:
-        return await self._request("POST", "/auth/bind-user-by-nickname", data={
-            "qqId": str(qq_id),
-            "nickname": nickname,
-        })
+    async def find_user(self, qq_id: str) -> dict[str, Any]:
+        return await self._request("GET", "/bot/player", params={"qqId": str(qq_id)})
 
     async def get_user_bests(self, qq_id: str, event: str | None = None) -> dict[str, Any]:
-        user_result = await self._request("GET", "/auth/find-user-by-qq", params={"qqId": str(qq_id)})
+        user_result = await self.find_user(qq_id)
         if user_result.get("code") != 200:
             return user_result
 
@@ -202,8 +196,7 @@ class APIClient:
         if not user_id:
             return {"code": 500, "message": "User data missing id"}
 
-        params = {"event": event} if event else None
-        best_result = await self._request("GET", f"/records/user/{user_id}/best", params=params)
+        best_result = await self._request("GET", f"/players/{user_id}")
         if best_result.get("code") != 200:
             return best_result
 
@@ -213,7 +206,10 @@ class APIClient:
             "data": {
                 "nickname": user.get("nickname", ""),
                 "qqId": user.get("qqId", qq_id),
-                "bestRecords": best_result.get("data", []) or [],
+                "bestRecords": [
+                    {"event": row["event"], "bestSingleSeconds": row["singleSeconds"], "bestAverageSeconds": row["averageSeconds"]}
+                    for row in best_result["data"]["best"] if not event or row["event"] == event
+                ],
             }
         }
 
@@ -242,7 +238,13 @@ class APIClient:
         if method:
             payload["method"] = method
 
-        return await self._request("POST", "/auth/submit-record-by-qq", data=payload)
+        result = await self._request("POST", "/bot/records", data=payload)
+        if result["code"] == 200:
+            for key, metric in (("previousSingleBest", "single"), ("previousAverageBest", "average")):
+                previous = result["data"].get(key)
+                if previous is not None:
+                    previous["seconds"] = previous.get(f"{metric}Seconds")
+        return result
 
     async def create_meme_event(
         self,
@@ -251,12 +253,15 @@ class APIClient:
         event_name: str,
         description: str = "",
     ) -> dict[str, Any]:
-        return await self._request("POST", "/auth/create-meme-event", data={
+        result = await self._request("POST", "/bot/events", data={
             "qqId": str(qq_id),
-            "eventCode": event_code,
-            "eventName": event_name,
+            "code": event_code,
+            "name": event_name,
             "description": description,
         })
+        if result["code"] == 200:
+            result["data"]["id"] = result["data"]["code"]
+        return result
 
     async def get_leaderboard(self, event: str, rank_type: str, limit: int = 10) -> dict[str, Any]:
         """获取单项目排行榜
@@ -283,12 +288,12 @@ class APIClient:
         time_field = "singleSeconds" if rank_type == "single" else "averageSeconds"
         leaderboard = [
             {
-                "rank": index + 1,
+                "rank": item["rank"],
                 "nickname": item.get("nickname") or "无名高手",
                 "seconds": item.get(time_field),
-                "userId": item.get("profileUserNo") or item.get("userId"),
+                "userId": item["userNo"],
             }
-            for index, item in enumerate(leaderboard_data)
+            for item in leaderboard_data
         ]
 
         return {
@@ -302,7 +307,13 @@ class APIClient:
         }
 
     async def fetch_meme_events(self) -> dict[str, Any]:
-        return await self._request("GET", "/meme-events")
+        result = await self._request("GET", "/events")
+        if result["code"] == 200:
+            result["data"] = [
+                {"id": row["code"], "name": row["name"]}
+                for row in result["data"] if row["category"] == "meme" and row["active"]
+            ]
+        return result
 
     async def close(self):
         if self.session and not self.session.closed:

@@ -62,7 +62,7 @@ async def handle(plugin, event: AstrMessageEvent):
 
         error_msg = result.get("message", "未知错误")
         if result.get("code") == 404 and "bind" in str(error_msg).lower():
-            error_msg = "还没绑定站内账号哦，先用 /绑定 [昵称] 再来创建吧~"
+            error_msg = "请先在个人主页绑定 QQ。"
         response_text = f"创建失败\n错误: {error_msg}"
         yield event.plain_result(response_text).use_t2i(False)
     except Exception as e:
