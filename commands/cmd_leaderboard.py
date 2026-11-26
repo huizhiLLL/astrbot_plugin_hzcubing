@@ -39,7 +39,7 @@ async def handle(plugin, event: AstrMessageEvent):
     event_input = cmd_tokens.get(1)
     rank_type_input = cmd_tokens.get(2)
 
-    if not event_input or not rank_type_input:
+    if not event_input:
         yield event.plain_result(
             "参数还没写完整哦~\n"
             "用法：/排行榜 [项目] [单次/平均]\n"
@@ -69,7 +69,13 @@ async def handle(plugin, event: AstrMessageEvent):
         ).use_t2i(False)
         return
 
-    rank_type = RANK_TYPE_MAP.get(rank_type_input.strip())
+    await plugin.hzcubing_service._ensure_meme_events()
+    is_score = event_code in plugin.hzcubing_service.score_event_codes
+    requested_type = (rank_type_input or "").strip()
+    if is_score:
+        rank_type = "score" if not requested_type or requested_type in ("成绩", "积分") or requested_type in RANK_TYPE_MAP else None
+    else:
+        rank_type = RANK_TYPE_MAP.get(requested_type)
     if not rank_type:
         yield event.plain_result(
             "第二个参数要写 单次 或 平均 哦~\n"
@@ -89,7 +95,7 @@ async def handle(plugin, event: AstrMessageEvent):
 
         data = result.get("data", {}) or {}
         leaderboard = data.get("leaderboard", []) or []
-        display_type = "单次" if rank_type == "single" else "平均"
+        display_type = "成绩" if rank_type == "score" else "单次" if rank_type == "single" else "平均"
 
         if not leaderboard:
             yield event.plain_result(
@@ -102,7 +108,7 @@ async def handle(plugin, event: AstrMessageEvent):
             rank = item.get("rank", "-")
             nickname = item.get("nickname") or "无名高手"
             seconds = item.get("seconds")
-            time_text = format_time_seconds(seconds)
+            time_text = str(seconds) if rank_type == "score" and seconds is not None else format_time_seconds(seconds)
             lines.append(f"{rank}. {nickname} {time_text}")
 
         yield event.plain_result("\n".join(lines)).use_t2i(False)

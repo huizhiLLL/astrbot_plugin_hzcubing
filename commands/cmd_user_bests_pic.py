@@ -30,6 +30,9 @@ def _format_text_response(nickname: str, user_qq_id: str, event_code: str | None
     lines: list[str] = []
     for record in _sort_best_records(best_records):
         event_name = record.get("event", "")
+        if record.get("score") is not None:
+            lines.append(f"{event_name}  成绩 {record['score']}")
+            continue
         best_single = record.get("bestSingleSeconds")
         best_average = record.get("bestAverageSeconds")
 
@@ -44,6 +47,9 @@ def _template_data(nickname: str, user_qq_id: str, event_code: str | None, best_
     rows: list[dict] = []
     for record in _sort_best_records(best_records):
         event_name = record.get("event", "") or "-"
+        if record.get("score") is not None:
+            rows.append({"event": f"{event_name}（成绩）", "single": str(record["score"]), "avg": "-"})
+            continue
         best_single = record.get("bestSingleSeconds")
         best_average = record.get("bestAverageSeconds")
 
@@ -96,8 +102,11 @@ async def handle(plugin, event: AstrMessageEvent):
             if event_input.strip() in OFFICIAL_EVENT_CODES:
                 event_code = event_input.strip()
             else:
-                yield event.plain_result(f"找不到这个项目呢：{event_input}").use_t2i(False)
-                return
+                await plugin.hzcubing_service._ensure_meme_events()
+                event_code = plugin.hzcubing_service.meme_events_cache.get(event_input.strip())
+                if not event_code:
+                    yield event.plain_result(f"找不到这个项目呢：{event_input}").use_t2i(False)
+                    return
 
     qq_id = resolve_target_qq(event)
     if not qq_id:

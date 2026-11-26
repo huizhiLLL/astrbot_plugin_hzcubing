@@ -19,6 +19,8 @@ CATEGORY_ALIASES = {
     "趣味项目": "fun",
     "整活": "meme",
     "整活项目": "meme",
+    "积分": "score",
+    "积分项目": "score",
 }
 
 
@@ -40,7 +42,7 @@ async def handle(plugin, event: AstrMessageEvent):
 
     if category is None:
         yield event.plain_result(
-            "GR 只支持这三种看法哦~\n"
+            "GR 支持官方、趣味、整活和积分哦~\n"
             "用法：/gr 官方\n"
             "      /gr 趣味\n"
             "      /gr 整活"
@@ -74,7 +76,9 @@ async def handle(plugin, event: AstrMessageEvent):
                 return event_name in OFFICIAL_EVENT_CODES
             if category == "fun":
                 return event_name in EXTRA_EVENT_NAMES
-            return event_name in meme_event_codes
+            if category == "score":
+                return event_name in plugin.hzcubing_service.score_event_codes
+            return event_name in meme_event_codes and event_name not in plugin.hzcubing_service.score_event_codes
 
         def _sort_key(event_name: str):
             if category == "official":
@@ -94,6 +98,11 @@ async def handle(plugin, event: AstrMessageEvent):
         lines = []
         for record in filtered_records:
             event_name = str(record.get("event", "")).strip()
+            if category == "score":
+                score = record.get("score")
+                if score is not None:
+                    lines.append(f" {event_name}  {score.get('nickname') or '无名高手'} {score.get('value')}")
+                continue
             single = record.get("single")
             average = record.get("average")
 
@@ -130,6 +139,7 @@ async def handle(plugin, event: AstrMessageEvent):
             "official": "官方项目",
             "fun": "趣味项目",
             "meme": "整活项目",
+            "score": "积分项目",
         }[category]
 
         if not lines:

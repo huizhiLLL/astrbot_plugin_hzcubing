@@ -27,7 +27,7 @@ def _format_date(value) -> str:
         return str(value).split("T", 1)[0].replace("-", ".")
 
 
-def _format_history_section(title: str, items: list[dict]) -> list[str]:
+def _format_history_section(title: str, items: list[dict], score: bool = False) -> list[str]:
     lines = [title]
     if not items:
         lines.append("暂无")
@@ -35,7 +35,7 @@ def _format_history_section(title: str, items: list[dict]) -> list[str]:
 
     for item in items:
         nickname = item.get("nickname") or "无名高手"
-        time_text = format_time_seconds(item.get("seconds"))
+        time_text = str(item.get("score")) if score else format_time_seconds(item.get("seconds"))
         date_text = _format_date(item.get("timestamp"))
         lines.append(f"{nickname} {time_text} {date_text}")
     return lines
@@ -103,13 +103,17 @@ async def handle(plugin, event: AstrMessageEvent):
         single_history = data.get("single", []) or []
         average_history = data.get("average", []) or []
 
-        if not single_history and not average_history:
+        score_history = data.get("score", []) or []
+        if not single_history and not average_history and not score_history:
             yield event.plain_result(f"{event_code} 暂时还没有GR历史").use_t2i(False)
             return
 
         lines = [f"{event_code} 的GR历史如下："]
-        lines.extend(_format_history_section("\n单次\n", single_history))
-        lines.extend(_format_history_section("\n平均\n", average_history))
+        if event_code in plugin.hzcubing_service.score_event_codes:
+            lines.extend(_format_history_section("\n成绩\n", score_history, score=True))
+        else:
+            lines.extend(_format_history_section("\n单次\n", single_history))
+            lines.extend(_format_history_section("\n平均\n", average_history))
 
         yield event.plain_result("\n".join(lines)).use_t2i(False)
     except Exception as e:

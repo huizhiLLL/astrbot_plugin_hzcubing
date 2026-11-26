@@ -9,6 +9,7 @@ from ..services.hzcubing import (
     format_time_seconds,
     normalize_meme_event_input,
     parse_time_to_seconds,
+    parse_score,
 )
 
 
@@ -41,39 +42,6 @@ async def handle(plugin, event: AstrMessageEvent):
         ).use_t2i(False)
         return
 
-    if (not single_time or single_time == "-") and (not average_time or average_time == "-"):
-        yield event.plain_result(
-            "单次成绩和平均成绩至少要给一个哦~\n"
-            "用法: /录入 [项目] [单次成绩] [平均成绩] [魔方] [方法]"
-        ).use_t2i(False)
-        return
-
-    def _is_valid_time_token(value: str | None) -> bool:
-        if value is None:
-            return False
-        token = value.strip()
-        if not token:
-            return False
-        if token == "-":
-            return True
-        if token.upper() in {"DNF", "DNS"}:
-            return True
-        return parse_time_to_seconds(token) is not None
-
-    if single_time and not _is_valid_time_token(single_time):
-        yield event.plain_result(
-            f"参数格式不对哦，单次成绩位置收到了非时间字符串：{single_time}\n"
-            "请按空格重新录入，格式：/录入 [项目] [单次成绩] [平均成绩]"
-        ).use_t2i(False)
-        return
-
-    if average_time and not _is_valid_time_token(average_time):
-        yield event.plain_result(
-            f"参数格式不对哦，平均成绩位置收到了非时间字符串：{average_time}\n"
-            "请按空格重新录入，格式：/录入 [项目] [单次成绩] [平均成绩]"
-        ).use_t2i(False)
-        return
-
     event_input_stripped = event_input.strip()
     normalized_event_input = normalize_meme_event_input(event_input_stripped)
     event_code = EVENT_NAME_MAP.get(event_input_stripped)
@@ -92,9 +60,49 @@ async def handle(plugin, event: AstrMessageEvent):
 
     if not event_code:
         yield event.plain_result(
-            f"找不到这个项目呢：{event_input}，目前只支持官方项目和已收录的整活项目哦~"
+            f"找不到这个项目呢：{event_input}，请检查项目名称或是否启用哦~"
         ).use_t2i(False)
         return
+
+    await plugin.hzcubing_service._ensure_meme_events()
+    is_score = event_code in plugin.hzcubing_service.score_event_codes
+    if is_score:
+        if parse_score(single_time) is None or average_time is not None:
+            yield event.plain_result("积分项目用法：/录入 [项目] [成绩]，例如 /录入 汉堡塔 112.6").use_t2i(False)
+            return
+    else:
+        if (not single_time or single_time == "-") and (not average_time or average_time == "-"):
+            yield event.plain_result(
+                "单次成绩和平均成绩至少要给一个哦~\n"
+                "用法: /录入 [项目] [单次成绩] [平均成绩] [魔方] [方法]"
+            ).use_t2i(False)
+            return
+
+        def _is_valid_time_token(value: str | None) -> bool:
+            if value is None:
+                return False
+            token = value.strip()
+            if not token:
+                return False
+            if token == "-":
+                return True
+            if token.upper() in {"DNF", "DNS"}:
+                return True
+            return parse_time_to_seconds(token) is not None
+
+        if single_time and not _is_valid_time_token(single_time):
+            yield event.plain_result(
+                f"参数格式不对哦，单次成绩位置收到了非时间字符串：{single_time}\n"
+                "请按空格重新录入，格式：/录入 [项目] [单次成绩] [平均成绩]"
+            ).use_t2i(False)
+            return
+
+        if average_time and not _is_valid_time_token(average_time):
+            yield event.plain_result(
+                f"参数格式不对哦，平均成绩位置收到了非时间字符串：{average_time}\n"
+                "请按空格重新录入，格式：/录入 [项目] [单次成绩] [平均成绩]"
+            ).use_t2i(False)
+            return
 
     qq_id = event.get_sender_id()
     if not qq_id:
@@ -107,8 +115,9 @@ async def handle(plugin, event: AstrMessageEvent):
         result = await plugin.hzcubing_service.api_client.submit_record(
             qq_id=qq_id,
             event=event_code,
-            single_time=single_time if single_time and single_time != "-" else None,
-            average_time=average_time if average_time and average_time != "-" else None,
+            single_time=single_time if not is_score and single_time and single_time != "-" else None,
+            average_time=average_time if not is_score and average_time and average_time != "-" else None,
+            score=single_time if is_score else None,
             cube=cube if cube and cube != "-" else None,
             method=method if method and method != "-" else None,
         )
@@ -117,6 +126,16 @@ async def handle(plugin, event: AstrMessageEvent):
             data = result.get("data", {})
             if not data:
                 yield event.plain_result("呜呜，成绩录入成功但没有返回详细信息呢...").use_t2i(False)
+                return
+
+            if is_score:
+                score = data.get("score")
+                nickname = data.get("nickname", "")
+                yield event.plain_result(f"成绩录入成功！\n项目: {event_code}\n成绩: {score}\n用户: {nickname}").use_t2i(False)
+                if data.get("isScoreGR"):
+                    previous = data.get("previousScoreBest")
+                    detail = f"\n原纪录：{previous.get('nickname', '未知用户')} {previous.get('score')}" if previous else ""
+                    yield event.plain_result(f"记录快讯！🎉恭喜 {nickname} 刷新{event_code}群纪录！{detail}").use_t2i(False)
                 return
 
             # 基本成绩字段

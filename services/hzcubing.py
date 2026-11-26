@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from datetime import datetime, timezone
 import time
 from decimal import Decimal, ROUND_DOWN
@@ -111,6 +112,18 @@ def parse_time_to_seconds(value: str | float | int | None) -> float | None:
         return None
 
 
+def parse_score(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if not re.fullmatch(r"[+-]?[0-9]+(?:\.[0-9]+)?", value):
+        return None
+    try:
+        return value if abs(Decimal(value)) <= Decimal(9007199254740991) else None
+    except Exception:
+        return None
+
+
 class APIClient:
     def __init__(self, base_url: str | None = None, timeout: int = REQUEST_TIMEOUT):
         self.base_url = (base_url or os.getenv("HZCUBING_API_URL") or API_BASE_URL).rstrip("/")
@@ -170,7 +183,7 @@ class APIClient:
             }
 
         return {"code": 200, "data": {"bestRecords": [
-            {"event": row["event"], "single": holder(row["single"]), "average": holder(row["average"])}
+            {"event": row["event"], "single": holder(row["single"]), "average": holder(row["average"]), "score": row.get("score")}
             for row in result["data"]
         ]}}
 
@@ -181,7 +194,10 @@ class APIClient:
         return {"code": 200, "data": {metric: [
             {"seconds": row[f"{metric}Seconds"], "nickname": row["nickname"], "timestamp": self._timestamp(row["timestamp"])}
             for row in result["data"][metric]
-        ] for metric in ("single", "average")}}
+        ] for metric in ("single", "average")} | {"score": [
+            {"score": row["score"], "nickname": row["nickname"], "timestamp": self._timestamp(row["timestamp"])}
+            for row in result["data"].get("score", [])
+        ]}}
 
     async def find_user(self, qq_id: str) -> dict[str, Any]:
         return await self._request("GET", "/bot/player", params={"qqId": str(qq_id)})
@@ -207,7 +223,7 @@ class APIClient:
                 "nickname": user.get("nickname", ""),
                 "qqId": user.get("qqId", qq_id),
                 "bestRecords": [
-                    {"event": row["event"], "bestSingleSeconds": row["singleSeconds"], "bestAverageSeconds": row["averageSeconds"]}
+                    {"event": row["event"], "bestSingleSeconds": row["singleSeconds"], "bestAverageSeconds": row["averageSeconds"], "score": row.get("score")}
                     for row in best_result["data"]["best"] if not event or row["event"] == event
                 ],
             }
@@ -221,6 +237,7 @@ class APIClient:
         average_time: str | None = None,
         cube: str | None = None,
         method: str | None = None,
+        score: str | None = None,
     ) -> dict[str, Any]:
         single_seconds = parse_time_to_seconds(single_time)
         average_seconds = parse_time_to_seconds(average_time)
@@ -229,6 +246,8 @@ class APIClient:
             "qqId": str(qq_id),
             "event": event,
         }
+        if score is not None:
+            payload["score"] = score
         if single_seconds is not None:
             payload["singleSeconds"] = single_seconds
         if average_seconds is not None:
@@ -285,7 +304,7 @@ class APIClient:
         leaderboard_data = result.get("data", []) or []
 
         # 转换为统一格式，添加排名
-        time_field = "singleSeconds" if rank_type == "single" else "averageSeconds"
+        time_field = "score" if rank_type == "score" else "singleSeconds" if rank_type == "single" else "averageSeconds"
         leaderboard = [
             {
                 "rank": item["rank"],
@@ -310,8 +329,8 @@ class APIClient:
         result = await self._request("GET", "/events")
         if result["code"] == 200:
             result["data"] = [
-                {"id": row["code"], "name": row["name"]}
-                for row in result["data"] if row["category"] == "meme" and row["active"]
+                {"id": row["code"], "name": row["name"], "category": row["category"]}
+                for row in result["data"] if row["category"] in ("meme", "score") and row["active"]
             ]
         return result
 
@@ -324,6 +343,7 @@ class HZCubingService:
     def __init__(self, api_client: APIClient):
         self.api_client = api_client
         self.meme_events_cache: dict[str, str] = {}
+        self.score_event_codes: set[str] = set()
         self.meme_events_last_fetch = 0
         self.MEME_CACHE_DURATION = 300
 
@@ -334,6 +354,7 @@ class HZCubingService:
 
         result = await self.api_client.fetch_meme_events()
         next_cache: dict[str, str] = {}
+        next_scores: set[str] = set()
 
         if result.get("code") == 200:
             for item in result.get("data", []) or []:
@@ -341,9 +362,12 @@ class HZCubingService:
                 event_name = str(item.get("name") or "").strip()
                 if not event_code:
                     continue
+                if item.get("category") == "score":
+                    next_scores.add(event_code)
                 next_cache[event_code] = event_code
                 if event_name:
                     next_cache[event_name] = event_code
 
+        self.score_event_codes = next_scores
         self.meme_events_cache = next_cache
         self.meme_events_last_fetch = now

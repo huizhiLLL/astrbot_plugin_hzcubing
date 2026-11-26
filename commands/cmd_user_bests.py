@@ -89,6 +89,9 @@ async def handle(plugin, event: AstrMessageEvent):
 
             for record in sorted_records:
                 event_name = record.get("event", "")
+                if record.get("score") is not None:
+                    lines.append(f"{event_name}  成绩 {record['score']}")
+                    continue
                 best_single = record.get("bestSingleSeconds")
                 best_average = record.get("bestAverageSeconds")
 
