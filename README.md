@@ -43,5 +43,3 @@
   - 重新整理插件目录结构，移除顶层散落的命令与工具模块
   - 代码改为按 `commands/`、`services/`、`utils/`、`integrations/`、`assets/` 分类
   - 顶层只保留 `main.py` 与文档元数据文件，便于后续维护
-
-Worker API 通过环境变量 `HZCUBING_BOT_SECRET` 读取机器人凭据。可用 `HZCUBING_API_URL` 指向测试站点，默认地址为 `https://hzcubing.fun/api`。
